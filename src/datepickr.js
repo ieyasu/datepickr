@@ -60,6 +60,7 @@ datepickr.init = function (element, instanceConfig) {
         },
         calendarContainer = document.createElement('div'),
         navigationCurrentMonth = document.createElement('span'),
+        navigationCurrentYear = document.createElement('span'),
         calendar = document.createElement('table'),
         calendarBody = document.createElement('tbody'),
         wrapperElement,
@@ -71,8 +72,8 @@ datepickr.init = function (element, instanceConfig) {
         isSpecificDay,
         buildWeekdays,
         buildDays,
-        updateNavigationCurrentMonth,
-        buildMonthNavigation,
+        updateNavigationCurrentDate,
+        buildNavigation,
         handleYearChange,
         documentClick,
         calendarClick,
@@ -86,6 +87,7 @@ datepickr.init = function (element, instanceConfig) {
 
     calendarContainer.className = 'datepickr-calendar';
     navigationCurrentMonth.className = 'datepickr-current-month';
+    navigationCurrentYear.className = 'datepickr-current-year';
     instanceConfig = instanceConfig || {};
 
     wrap = function () {
@@ -268,23 +270,25 @@ datepickr.init = function (element, instanceConfig) {
         calendarBody.appendChild(calendarFragment);
     };
 
-    updateNavigationCurrentMonth = function () {
-        navigationCurrentMonth.innerHTML = date.month.string() + ' ' + self.currentYearView;
+    updateNavigationCurrentDate = function () {
+        navigationCurrentMonth.innerHTML = date.month.string();
+        navigationCurrentYear.innerHTML = self.currentYearView;
     };
 
-    buildMonthNavigation = function () {
-        var months = document.createElement('div'),
+    buildNavigation = function () {
+        var dates = document.createElement('div'),
             monthNavigation;
 
         monthNavigation  = '<span class="datepickr-prev-month">&lt;</span>';
         monthNavigation += '<span class="datepickr-next-month">&gt;</span>';
 
-        months.className = 'datepickr-months';
-        months.innerHTML = monthNavigation;
+        dates.className = 'datepickr-dates';
+        dates.innerHTML = monthNavigation;
 
-        months.appendChild(navigationCurrentMonth);
-        updateNavigationCurrentMonth();
-        calendarContainer.appendChild(months);
+        dates.appendChild(navigationCurrentMonth);
+        dates.appendChild(navigationCurrentYear);
+        updateNavigationCurrentDate();
+        calendarContainer.appendChild(dates);
     };
 
     handleYearChange = function () {
@@ -329,7 +333,7 @@ datepickr.init = function (element, instanceConfig) {
                 }
 
                 handleYearChange();
-                updateNavigationCurrentMonth();
+                updateNavigationCurrentDate();
                 buildDays();
             } else if (targetClass === 'datepickr-day' && !self.hasClass(target.parentNode, 'disabled')) {
                 self.selectedDate = {
@@ -358,7 +362,7 @@ datepickr.init = function (element, instanceConfig) {
     };
 
     buildCalendar = function () {
-        buildMonthNavigation();
+        buildNavigation();
         buildWeekdays();
         buildDays();
 

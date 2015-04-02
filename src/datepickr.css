@@ -24,7 +24,7 @@
     display: block;
 }
 
-.datepickr-calendar .datepickr-months {
+.datepickr-calendar .datepickr-dates {
 	background-color: #f6af3a;
 	border: 1px solid #e78f08;
 	-moz-border-radius: 4px;
@@ -56,7 +56,11 @@
 }
 
 .datepickr-calendar .datepickr-current-month {
-	padding: 0 .5em;
+	padding: 0 .25em 0 .5em;
+}
+
+.datepickr-calendar .datepickr-current-year {
+	padding: 0 .5em 0 .25em;
 }
 
 .datepickr-calendar .datepickr-prev-month:hover,
