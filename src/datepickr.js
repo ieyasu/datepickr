@@ -68,13 +68,14 @@ datepickr.init = function (element, instanceConfig) {
         calendar = document.createElement('table'),
         calendarBody = document.createElement('tbody'),
         wrapperElement,
-        currentDate = new Date(),
+        dateNow = new Date(),
         wrap,
         date,
         formatDate,
         monthToStr,
         isSpecificDay,
         buildWeekdays,
+        calcNumDays,
         buildDays,
         currentYearRange,
         updateNavigationChangingMonth,
@@ -128,35 +129,6 @@ datepickr.init = function (element, instanceConfig) {
         wrapperElement.className = 'datepickr-wrapper';
         self.element.parentNode.insertBefore(wrapperElement, self.element);
         wrapperElement.appendChild(self.element);
-    };
-
-    date = {
-        current: {
-            year: function () {
-                return currentDate.getFullYear();
-            },
-            month: {
-                integer: function () {
-                    return currentDate.getMonth();
-                },
-                string: function (shorthand) {
-                    var month = currentDate.getMonth();
-                    return monthToStr(month, shorthand);
-                }
-            },
-            day: function () {
-                return currentDate.getDate();
-            }
-        },
-        month: {
-            string: function () {
-                return monthToStr(self.currentMonthView, self.config.shorthandCurrentMonth);
-            },
-            numDays: function () {
-                // checks to see if february is a leap year otherwise return the respective # of days
-                return self.currentMonthView === 1 && (((self.currentYearView % 4 === 0) && (self.currentYearView % 100 !== 0)) || (self.currentYearView % 400 === 0)) ? 29 : self.l10n.daysInMonth[self.currentMonthView];
-            }
-        }
     };
 
     formatDate = function (dateFormat, milliseconds) {
@@ -242,9 +214,14 @@ datepickr.init = function (element, instanceConfig) {
         calendar.appendChild(weekdayContainer);
     };
 
+    calcNumDays = function () {
+        // checks to see if february is a leap year otherwise return the respective # of days
+        return self.currentMonthView === 1 && (((self.currentYearView % 4 === 0) && (self.currentYearView % 100 !== 0)) || (self.currentYearView % 400 === 0)) ? 29 : self.l10n.daysInMonth[self.currentMonthView];
+    };
+
     buildDays = function () {
         var firstOfMonth = new Date(self.currentYearView, self.currentMonthView, 1).getDay(),
-            numDays = date.month.numDays(),
+            numDays = calcNumDays(),
             calendarFragment = document.createDocumentFragment(),
             row = document.createElement('tr'),
             dayCount,
@@ -277,7 +254,7 @@ datepickr.init = function (element, instanceConfig) {
                 dayCount = 0;
             }
 
-            today = isSpecificDay(date.current.day(), date.current.month.integer(), date.current.year(), dayNumber) ? ' today' : '';
+            today = isSpecificDay(dateNow.getDate(), dateNow.getMonth(), dateNow.getYear(), dayNumber) ? ' today' : '';
             if (self.selectedDate) {
                 selected = isSpecificDay(self.selectedDate.day, self.selectedDate.month, self.selectedDate.year, dayNumber) ? ' selected' : '';
             }
@@ -365,7 +342,8 @@ datepickr.init = function (element, instanceConfig) {
 
     updateNavigationCurrentDate = function () {
         navigationCurrentMonth.innerHTML = self.config.changeMonth ?
-            updateNavigationChangingMonth() : date.month.string();
+            updateNavigationChangingMonth() :
+            monthToStr(self.currentMonthView, self.config.shorthandCurrentMonth);
 
         navigationCurrentYear.innerHTML = self.config.changeYear ?
             updateNavigationChangingYear() : self.currentYearView;
@@ -560,9 +538,9 @@ datepickr.init = function (element, instanceConfig) {
             self.currentDayView = self.selectedDate.day;
         } else {
             self.selectedDate = null;
-            self.currentYearView = date.current.year();
-            self.currentMonthView = date.current.month.integer();
-            self.currentDayView = date.current.day();
+            self.currentYearView = dateNow.getYear();
+            self.currentMonthView = dateNow.getMonth();
+            self.currentDayView = dateNow.getDate();
         }
 
         wrap();
