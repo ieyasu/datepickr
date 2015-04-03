@@ -55,12 +55,9 @@
 	float: right;
 }
 
-.datepickr-calendar .datepickr-current-month {
-	padding: 0 .25em 0 .5em;
-}
-
+.datepickr-calendar .datepickr-current-month,
 .datepickr-calendar .datepickr-current-year {
-	padding: 0 .5em 0 .25em;
+	margin: .2em .3em;
 }
 
 .datepickr-calendar .datepickr-prev-month:hover,

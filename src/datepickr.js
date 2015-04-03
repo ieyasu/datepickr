@@ -56,11 +56,15 @@ datepickr.init = function (element, instanceConfig) {
             altInput: null,
             minDate: null,
             maxDate: null,
+            changeMonth: false,
+            changeYear: false,
+            yearRange: "c-10:c+10",
             shorthandCurrentMonth: false
         },
+        initConfig,
         calendarContainer = document.createElement('div'),
-        navigationCurrentMonth = document.createElement('span'),
-        navigationCurrentYear = document.createElement('span'),
+        navigationCurrentMonth,
+        navigationCurrentYear,
         calendar = document.createElement('table'),
         calendarBody = document.createElement('tbody'),
         wrapperElement,
@@ -72,9 +76,15 @@ datepickr.init = function (element, instanceConfig) {
         isSpecificDay,
         buildWeekdays,
         buildDays,
+        currentYearRange,
+        updateNavigationChangingMonth,
+        updateNavigationChangingYear,
         updateNavigationCurrentDate,
         buildNavigation,
         handleYearChange,
+        rebuildCalendar,
+        monthChanged,
+        yearChanged,
         documentClick,
         calendarClick,
         buildCalendar,
@@ -85,10 +95,33 @@ datepickr.init = function (element, instanceConfig) {
         destroy,
         init;
 
+    initConfig = function () {
+        var config;
+
+        instanceConfig = instanceConfig || {};
+
+        self.config = {};
+
+        for (config in defaultConfig) {
+            self.config[config] = instanceConfig[config] || defaultConfig[config];
+        }
+    };
+
+    initConfig();
+
     calendarContainer.className = 'datepickr-calendar';
-    navigationCurrentMonth.className = 'datepickr-current-month';
-    navigationCurrentYear.className = 'datepickr-current-year';
-    instanceConfig = instanceConfig || {};
+
+    (function () {
+        var tagName;
+
+        tagName = self.config.changeMonth ? 'select' : 'span';
+        navigationCurrentMonth = document.createElement(tagName);
+        navigationCurrentMonth.className = 'datepickr-current-month';
+
+        tagName = self.config.changeYear ? 'select' : 'span';
+        navigationCurrentYear = document.createElement(tagName);
+        navigationCurrentYear.className = 'datepickr-current-year';
+    })();
 
     wrap = function () {
         wrapperElement = document.createElement('div');
@@ -270,9 +303,85 @@ datepickr.init = function (element, instanceConfig) {
         calendarBody.appendChild(calendarFragment);
     };
 
+    updateNavigationChangingMonth = function () {
+        var html = '', month = 0, endMonth = 11;
+
+        if (self.config.minDate) {
+            var currentJan = new Date(self.currentYearView, 0),
+                minDate = new Date(self.config.minDate);
+            if (currentJan < minDate) {
+                month = minDate.getMonth();
+            }
+        }
+
+        if (self.config.maxDate) {
+            var currentDec = new Date(self.currentYearView, 11),
+                maxDate = new Date(self.config.maxDate);
+            if (maxDate < currentDec) {
+                endMonth = maxDate.getMonth();
+            }
+        }
+
+        for (; month <= endMonth; month++) {
+            html += '<option value="' + month + '"';
+            if (month === self.currentMonthView) {
+                html += ' selected';
+            }
+            html += '>';
+            html += monthToStr(month, self.config.shorthandCurrentMonth);
+            html += '</option>';
+        }
+
+        return html;
+    };
+
+    updateNavigationChangingYear = function () {
+        var thisYear = new Date().getFullYear(),
+            whatYear = function (spec) {
+                var year;
+                switch (spec[0]) {
+                case '-':
+                case '+': // relative to now
+                    year = thisYear + parseInt(spec);
+                    break;
+                case 'c': // relative to current selection
+                    year = self.currentYearView + parseInt(spec.substring(1));
+                    break;
+                default: // absolute year
+                    year = parseInt(spec);
+                    break;
+                }
+                return isNaN(year) ? thisYear : year;
+            },
+            specs = self.config.yearRange.split(':'),
+            year = whatYear(specs[0]),
+            endYear = whatYear(specs[1] || ''),
+            html = '';
+
+        if (self.config.minDate) {
+            year = Math.max((new Date(self.config.minDate)).getFullYear(), year);
+        }
+        if (self.config.maxDate) {
+            endYear = Math.min((new Date(self.config.maxDate)).getFullYear(), endYear);
+        }
+
+        for (; year <= endYear; year++) {
+            html += '<option value="' + year + '"';
+            if (year === self.currentYearView) {
+                html += ' selected';
+            }
+            html += '>' + year + '</option>';
+        }
+
+        return html;
+    };
+
     updateNavigationCurrentDate = function () {
-        navigationCurrentMonth.innerHTML = date.month.string();
-        navigationCurrentYear.innerHTML = self.currentYearView;
+        navigationCurrentMonth.innerHTML = self.config.changeMonth ?
+            updateNavigationChangingMonth() : date.month.string();
+
+        navigationCurrentYear.innerHTML = self.config.changeYear ?
+            updateNavigationChangingYear() : self.currentYearView;
     };
 
     buildNavigation = function () {
@@ -287,6 +396,7 @@ datepickr.init = function (element, instanceConfig) {
 
         dates.appendChild(navigationCurrentMonth);
         dates.appendChild(navigationCurrentYear);
+
         updateNavigationCurrentDate();
         calendarContainer.appendChild(dates);
     };
@@ -301,6 +411,29 @@ datepickr.init = function (element, instanceConfig) {
             self.currentYearView++;
             self.currentMonthView = 0;
         }
+    };
+
+    rebuildCalendar = function () {
+        updateNavigationCurrentDate();
+
+        while (calendarBody.lastChild) {
+            calendarBody.removeChild(calendarBody.lastChild);
+        }
+        buildDays();
+    };
+
+    monthChanged = function (event) {
+        console.log("month", navigationCurrentMonth.value);
+        self.currentMonthView = parseInt(navigationCurrentMonth.value);
+        // XXX clamp to range
+        rebuildCalendar();
+    };
+
+    yearChanged = function (event) {
+        console.log("year", navigationCurrentYear.value);
+        self.currentYearView = parseInt(navigationCurrentYear.value);
+        // XXX clamp to range
+        rebuildCalendar();
     };
 
     documentClick = function (event) {
@@ -380,6 +513,18 @@ datepickr.init = function (element, instanceConfig) {
     };
 
     bind = function () {
+        var stopEvent = function (ev) { ev.preventDefault(); };
+
+        if (self.config.changeMonth) {
+            self.addEventListener(navigationCurrentMonth, 'click', stopEvent, false);
+            self.addEventListener(navigationCurrentMonth, 'change', monthChanged, false);
+        }
+
+        if (self.config.changeYear) {
+            self.addEventListener(navigationCurrentYear, 'click', stopEvent, false);
+            self.addEventListener(navigationCurrentYear, 'change', yearChanged, false);
+        }
+
         self.addEventListener(self.element, getOpenEvent(), open, false);
         self.addEventListener(calendarContainer, 'click', calendarClick, false);
     };
@@ -408,15 +553,9 @@ datepickr.init = function (element, instanceConfig) {
     };
 
     init = function () {
-        var config,
-            parsedDate;
+        var parsedDate;
 
-        self.config = {};
         self.destroy = destroy;
-
-        for (config in defaultConfig) {
-            self.config[config] = instanceConfig[config] || defaultConfig[config];
-        }
 
         self.element = element;
 

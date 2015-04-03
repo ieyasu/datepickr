@@ -131,7 +131,10 @@ You can also customize each datepickr instance by passing in some extra config o
 | altFormat | string | null | Exactly the same as date format, but for the altInput field |
 | minDate | integer | null | The minimum date that a user can start picking from, as a JavaScript timestamp. I recommend using [getTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTime) |
 | maxDate | integer | null | The maximum date that a user can pick from, as a JavaScript timestamp. I recommend using [getTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTime) |
-| shorthandCurrentMonth | boolean | false | Show the month using the shorthand version. I don't know if this is very useful, but maybe? |
+| changeMonth | boolean | false | If true, the month displayed in the titlebar becomes a dropdown menu that lets the user jump to an arbitrary month of the current year. |
+| changeYear | boolean | false | Like changeMonth, but displays some number of years to jump to.  The range of years is controlled by yearRange. |
+| yearRange | string | 'c-10:c+10' | The range of years displayed in the year dropdown menu.  The first and last year specifications are separated by a colon.  There are three syntaxes for the year spec: relative to today ("-nn:+nn"), relative to the currently selected date ("c-nn:c+nn"), or absolute ("nnnn:nnnn").  You can mix and match these syntaxes, e.g. an absolute start year and an end year relative to today. The 'nn' is an arbitrary-length integer passed to parseInt(). |
+| shorthandCurrentMonth | boolean | false | Show the month using the shorthand version. |
 
 Change the default date format:
 
