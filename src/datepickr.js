@@ -252,7 +252,7 @@ datepickr.init = function (element, instanceConfig) {
             today = '',
             selected = '',
             disabled = '',
-            currentTimestamp;
+            workingDate;
 
         // Offset the first day by the specified amount
         firstOfMonth -= self.l10n.firstDayOfWeek;
@@ -283,15 +283,12 @@ datepickr.init = function (element, instanceConfig) {
             }
 
             if (self.config.minDate || self.config.maxDate) {
-                currentTimestamp = new Date(self.currentYearView, self.currentMonthView, dayNumber).getTime();
-                disabled = '';
-
-                if (self.config.minDate && currentTimestamp < self.config.minDate) {
+                workingDate = new Date(self.currentYearView, self.currentMonthView, dayNumber);
+                if ((self.config.minDate && workingDate < self.config.minDate) ||
+                    (self.config.maxDate && workingDate > self.config.maxDate)) {
                     disabled = ' disabled';
-                }
-
-                if (self.config.maxDate && currentTimestamp > self.config.maxDate) {
-                    disabled = ' disabled';
+                } else {
+                    disabled = '';
                 }
             }
 
@@ -304,30 +301,20 @@ datepickr.init = function (element, instanceConfig) {
     };
 
     updateNavigationChangingMonth = function () {
-        var html = '', month = 0, endMonth = 11;
+        var html = '', month = 0, endMonth = 11, selected;
 
-        if (self.config.minDate) {
-            var currentJan = new Date(self.currentYearView, 0),
-                minDate = new Date(self.config.minDate);
-            if (currentJan < minDate) {
-                month = minDate.getMonth();
-            }
+        // XXX if we're outside the range, clamp to min or max and restart DOM update
+        if (self.config.minDate && new Date(self.currentYearView, 0) < self.config.minDate) {
+            month = self.config.minDate.getMonth(); // start after January
         }
 
-        if (self.config.maxDate) {
-            var currentDec = new Date(self.currentYearView, 11),
-                maxDate = new Date(self.config.maxDate);
-            if (maxDate < currentDec) {
-                endMonth = maxDate.getMonth();
-            }
+        if (self.config.maxDate && self.config.maxDate < new Date(self.currentYearView, 11)) {
+            endMonth = self.config.maxDate.getMonth(); // end before December
         }
 
-        for (; month <= endMonth; month++) {
-            html += '<option value="' + month + '"';
-            if (month === self.currentMonthView) {
-                html += ' selected';
-            }
-            html += '>';
+       for (; month <= endMonth; month++) {
+            selected = (month === self.currentMonthView) ? ' selected' : '';
+            html += '<option value="' + month + '"' + selected + '>';
             html += monthToStr(month, self.config.shorthandCurrentMonth);
             html += '</option>';
         }
@@ -359,10 +346,10 @@ datepickr.init = function (element, instanceConfig) {
             html = '';
 
         if (self.config.minDate) {
-            year = Math.max((new Date(self.config.minDate)).getFullYear(), year);
+            year = Math.max(self.config.minDate.getFullYear(), year);
         }
         if (self.config.maxDate) {
-            endYear = Math.min((new Date(self.config.maxDate)).getFullYear(), endYear);
+            endYear = Math.min(self.config.maxDate.getFullYear(), endYear);
         }
 
         for (; year <= endYear; year++) {
@@ -423,14 +410,12 @@ datepickr.init = function (element, instanceConfig) {
     };
 
     monthChanged = function (event) {
-        console.log("month", navigationCurrentMonth.value);
         self.currentMonthView = parseInt(navigationCurrentMonth.value);
         // XXX clamp to range
         rebuildCalendar();
     };
 
     yearChanged = function (event) {
-        console.log("year", navigationCurrentYear.value);
         self.currentYearView = parseInt(navigationCurrentYear.value);
         // XXX clamp to range
         rebuildCalendar();

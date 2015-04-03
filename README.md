@@ -129,8 +129,8 @@ You can also customize each datepickr instance by passing in some extra config o
 | dateFormat | string | 'F j, Y' | A string of characters which are used to define how the date will be displayed in the input box. Very similar to the PHP date function, but with less options. The supported characters are defined below. |
 | altInput | node | null | A reference to another input element. This can be useful if you want to show the user a readable date, but return something totally different to the server. |
 | altFormat | string | null | Exactly the same as date format, but for the altInput field |
-| minDate | integer | null | The minimum date that a user can start picking from, as a JavaScript timestamp. I recommend using [getTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTime) |
-| maxDate | integer | null | The maximum date that a user can pick from, as a JavaScript timestamp. I recommend using [getTime](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTime) |
+| minDate | Date | null | The minimum date that a user can start picking from, as a JavaScript Date object. |
+| maxDate | Date | null | The maximum date that a user can pick from, as a JavaScript Date object. |
 | changeMonth | boolean | false | If true, the month displayed in the titlebar becomes a dropdown menu that lets the user jump to an arbitrary month of the current year. |
 | changeYear | boolean | false | Like changeMonth, but displays some number of years to jump to.  The range of years is controlled by yearRange. |
 | yearRange | string | 'c-10:c+10' | The range of years displayed in the year dropdown menu.  The first and last year specifications are separated by a colon.  There are three syntaxes for the year spec: relative to today ("-nn:+nn"), relative to the currently selected date ("c-nn:c+nn"), or absolute ("nnnn:nnnn").  You can mix and match these syntaxes, e.g. an absolute start year and an end year relative to today. The 'nn' is an arbitrary-length integer passed to parseInt(). |
@@ -148,11 +148,12 @@ Specify a min and max date:
 
 ```
 <script>
+    var now = new Date().getTime();
     datepickr('#minAndMax', {
         // few days ago
-        minDate: new Date().getTime() - 2.592e8,
+        minDate: new Date(now - 2.592e8),
         // few days from now
-        maxDate: new Date().getTime() + 2.592e8
+        maxDate: new Date(now + 2.592e8)
     });
 </script>
 ```
