@@ -40,7 +40,28 @@ DPDate.monthAbbrevs = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 
 DPDate.daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-DPDate.firstDayOfWeek = 0; // Sunday
+DPDate.firstDayOfWeek = 0; // Sunday; range 0-6
+
+DPDate.lastDayOfWeek = function() { // range 0-6
+    return (DPDate.firstDayOfWeek + 6) % 7;
+};
+
+/* Rearranges DPDate.weekdayAbbrevs if DPDate.firstDayOfWeek > 0
+ * so that first day is the first element of the array.
+ */
+DPDate.weekdaysInCalendarOrder = function() {
+    if (DPDate.firstDayOfWeek < 0 || DPDate.firstDayOfWeek > 7) {
+        throw "DPDate.firstDayOfWeek is outside range 0-6 (" +
+              DPDate.firstDayOfWeek + ")";
+    }
+
+    var days = DPDate.weekdayAbbrevs;
+    if (DPDate.firstDayOfWeek > 0) {
+        days = days.slice(DPDate.firstDayOfWeek).concat(
+            days.slice(0, DPDate.firstDayOfWeek));
+    }
+    return days;
+};
 
 DPDate.prototype = {
     getYear: function() {
@@ -54,6 +75,19 @@ DPDate.prototype = {
     },
     getDayOfWeek: function() {
         return this.date.getDay(); // 0 = Sunday
+    },
+
+    setYear: function(year) {
+        this.date.setFullYear(year);
+        return this;
+    },
+    setMonth: function(month) {
+        this.date.setMonth(month);
+        return this;
+    },
+    setDay: function(dayOfMonth) {
+        this.date.setDate(dayOfMonth);
+        return this;
     },
 
     /* Returns true if this and the other date argument have the same
@@ -110,6 +144,31 @@ DPDate.prototype = {
             }
         }
         return this;
+    },
+
+    firstCalendarDay: function() {
+        var first = Object.create(this).setDay(1);
+        // relative to first day of week without wrapping back to 0
+        var day = (first.getDayOfWeek() + DPDate.firstDayOfWeek) %
+            (DPDate.firstDayOfWeek + 7);
+        if (day > DPDate.firstDayOfWeek) { // first day in prev month
+            first.setDay(first.getDay() - (day - DPDate.firstDayOfWeek));
+        }
+        return first;
+    },
+
+    lastCalendarDay: function() {
+        var last = new DPDate(this.getYear(), this.getMonth(),
+            this.daysThisMonth());
+
+        // relative to first day of week without wrapping back to 0
+        var lastDayOfWeek = DPDate.firstDayOfWeek + 6;
+        var day = (last.getDayOfWeek() + DPDate.firstDayOfWeek) %
+            (DPDate.firstDayOfWeek + 7); // same range as lastDayOfWeek
+        if (day < lastDayOfWeek) { // last day on calendar is in next month
+            last.setDay(last.getDay() + (lastDayOfWeek - day));
+        }
+        return last;
     },
 
     /* Partial implementation of strftime() from C.
