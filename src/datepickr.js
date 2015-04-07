@@ -11,7 +11,7 @@
     http://www.wtfpl.net/ for more details.
 */
 
-/* All the date code needed by the calendar code.
+/* All the date code needed by the calendar.
  */
 function DPDate(year, month, day) {
     // bruteforce bullshit - any better way?
@@ -64,6 +64,10 @@ DPDate.weekdaysInCalendarOrder = function() {
 };
 
 DPDate.prototype = {
+    clone: function() {
+        return new DPDate(this.date.getTime());
+    },
+
     getYear: function() {
         return this.date.getFullYear();
     },
@@ -90,14 +94,16 @@ DPDate.prototype = {
         return this;
     },
 
+    compare: function(other) {
+        if (!other || !other.date || !other.date.getTime) return null;
+        return this.date.getTime() - other.date.getTime();
+    },
+
     /* Returns true if this and the other date argument have the same
      * year, month and day.
      */
     isSameDay: function(otherDate) {
-        return otherDate &&
-            otherDate.getYear && this.getYear() === otherDate.getYear() &&
-            otherDate.getMonth && this.getMonth() == otherDate.getMonth() &&
-            otherDate.getDay && this.getDay() == otherDate.getDay();
+        return this.compare(otherDate) === 0;
     },
 
     isLeapYear: function() {
@@ -126,28 +132,23 @@ DPDate.prototype = {
         return this;
     },
 
-    clamp: function(min, max) {
-        if (min) {
-            if (min.date) {
-                min = min.date;
-            }
-            if (this.date < min) {
-                this.date.setFullYear(min.getFullYear(), min.getMonth(), min.getDate());
-            }
-        }
-        if (max) {
-            if (max.date) {
-                max = max.date;
-            }
-            if (this.date > max) {
-                this.date.setFullYear(max.getFullYear(), max.getMonth(), max.getDate());
-            }
-        }
-        return this;
+    firstOfYear: function() {
+        return new DPDate(this.getYear(), 0, 1);
+    },
+    lastOfYear: function() {
+        return new DPDate(this.getYear(), 11, 31);
+    },
+
+    firstOfMonth: function() {
+        return new DPDate(this.date.getTime()).setDay(1);
+    },
+    lastOfMonth: function() {
+        return new DPDate(this.getYear(), this.getMonth(),
+                          this.daysThisMonth());
     },
 
     firstCalendarDay: function() {
-        var first = Object.create(this).setDay(1);
+        var first = this.firstOfMonth();
         // relative to first day of week without wrapping back to 0
         var day = (first.getDayOfWeek() + DPDate.firstDayOfWeek) %
             (DPDate.firstDayOfWeek + 7);
@@ -158,9 +159,7 @@ DPDate.prototype = {
     },
 
     lastCalendarDay: function() {
-        var last = new DPDate(this.getYear(), this.getMonth(),
-            this.daysThisMonth());
-
+        var last = this.lastOfMonth();
         // relative to first day of week without wrapping back to 0
         var lastDayOfWeek = DPDate.firstDayOfWeek + 6;
         var day = (last.getDayOfWeek() + DPDate.firstDayOfWeek) %
@@ -274,7 +273,7 @@ datepickr.init = function (element, instanceConfig) {
     'use strict';
     var self = this,
         defaultConfig = {
-            dateFormat: 'F j, Y',
+            dateFormat: '%B %e, %Y',
             altFormat: null,
             altInput: null,
             minDate: null,
@@ -282,7 +281,7 @@ datepickr.init = function (element, instanceConfig) {
             changeMonth: false,
             changeYear: false,
             yearRange: "c-10:c+10",
-            shorthandCurrentMonth: false
+            abbreviateMonth: false
         },
         initConfig,
         calendarContainer = document.createElement('div'),
@@ -291,21 +290,18 @@ datepickr.init = function (element, instanceConfig) {
         calendar = document.createElement('table'),
         calendarBody = document.createElement('tbody'),
         wrapperElement,
-        dateNow = new Date(),
+        showingDate,
+        selectedDate,
         wrap,
-        date,
-        formatDate,
-        monthToStr,
         isSpecificDay,
-        buildWeekdays,
+        buildDaysOfWeek,
         calcNumDays,
-        buildDays,
+        buildDaysInMonth,
         currentYearRange,
-        updateNavigationChangingMonth,
-        updateNavigationChangingYear,
+        updateMonthMenu,
+        updateYearMenu,
         updateNavigationCurrentDate,
         buildNavigation,
-        handleYearChange,
         rebuildCalendar,
         monthChanged,
         yearChanged,
@@ -329,6 +325,21 @@ datepickr.init = function (element, instanceConfig) {
         for (config in defaultConfig) {
             self.config[config] = instanceConfig[config] || defaultConfig[config];
         }
+
+        // convert from Date to DPDate
+        if (self.config.minDate && self.config.minDate.getTime) {
+            self.config.minDate = new DPDate(self.config.minDate.getTime());
+        }
+        if (self.config.maxDate && self.config.maxDate.getTime) {
+            self.config.maxDate = new DPDate(self.config.maxDate.getTime());
+        }
+
+        if (self.config.altInput && !self.config.altFormat) {
+            self.config.altFormat = self.config.dateFormat;
+        }
+
+        self.config.monthNames = self.config.abbreviateMonth ?
+            DPDate.monthAbbrevs : DPDate.months;
     };
 
     initConfig();
@@ -354,271 +365,152 @@ datepickr.init = function (element, instanceConfig) {
         wrapperElement.appendChild(self.element);
     };
 
-    formatDate = function (dateFormat, milliseconds) {
-        var formattedDate = '',
-            dateObj = new Date(milliseconds),
-            formats = {
-                d: function () {
-                    var day = formats.j();
-                    return (day < 10) ? '0' + day : day;
-                },
-                D: function () {
-                    return self.l10n.weekdays.shorthand[formats.w()];
-                },
-                j: function () {
-                    return dateObj.getDate();
-                },
-                l: function () {
-                    return self.l10n.weekdays.longhand[formats.w()];
-                },
-                w: function () {
-                    return dateObj.getDay();
-                },
-                F: function () {
-                    return monthToStr(formats.n() - 1, false);
-                },
-                m: function () {
-                    var month = formats.n();
-                    return (month < 10) ? '0' + month : month;
-                },
-                M: function () {
-                    return monthToStr(formats.n() - 1, true);
-                },
-                n: function () {
-                    return dateObj.getMonth() + 1;
-                },
-                U: function () {
-                    return dateObj.getTime() / 1000;
-                },
-                y: function () {
-                    return String(formats.Y()).substring(2);
-                },
-                Y: function () {
-                    return dateObj.getFullYear();
-                }
-            },
-            formatPieces = dateFormat.split('');
-
-        self.forEach(formatPieces, function (formatPiece, index) {
-            if (formats[formatPiece] && formatPieces[index - 1] !== '\\') {
-                formattedDate += formats[formatPiece]();
-            } else {
-                if (formatPiece !== '\\') {
-                    formattedDate += formatPiece;
-                }
-            }
-        });
-
-        return formattedDate;
-    };
-
-    monthToStr = function (date, shorthand) {
-        if (shorthand === true) {
-            return self.l10n.months.shorthand[date];
-        }
-
-        return self.l10n.months.longhand[date];
-    };
-
-    isSpecificDay = function (day, month, year, comparison) {
-        return day === comparison && self.currentMonthView === month && self.currentYearView === year;
-    };
-
-    buildWeekdays = function () {
+    // Sun/Mon Tue ... Fri Sat/Sun column headers
+    buildDaysOfWeek = function () {
         var weekdayContainer = document.createElement('thead'),
-            firstDayOfWeek = self.l10n.firstDayOfWeek,
-            weekdays = self.l10n.weekdays.shorthand;
+            dayNames = DPDate.weekdaysInCalendarOrder();
 
-        if (firstDayOfWeek > 0 && firstDayOfWeek < weekdays.length) {
-            weekdays = [].concat(weekdays.splice(firstDayOfWeek, weekdays.length), weekdays.splice(0, firstDayOfWeek));
-        }
-
-        weekdayContainer.innerHTML = '<tr><th>' + weekdays.join('</th><th>') + '</th></tr>';
+        weekdayContainer.innerHTML = '<tr><th>' + dayNames.join('</th><th>') + '</th></tr>';
         calendar.appendChild(weekdayContainer);
     };
 
-    calcNumDays = function () {
-        // checks to see if february is a leap year otherwise return the respective # of days
-        return self.currentMonthView === 1 && (((self.currentYearView % 4 === 0) && (self.currentYearView % 100 !== 0)) || (self.currentYearView % 400 === 0)) ? 29 : self.l10n.daysInMonth[self.currentMonthView];
+    // each day in the month, and overlap
+    buildDaysInMonth = function () {
+        var sd = self.showingDate,
+            calDay = sd.firstCalendarDay(),
+            calLast = sd.lastCalendarDay(),
+            today = new DPDate(),
+            mFirst = sd.firstOfMonth(),
+            firstEnabled = (mFirst.compare(self.config.minDate) < 0) ?
+                self.config.minDate : mFirst,
+            mLast = sd.lastOfMonth(),
+            lastEnabled = (mLast.compare(self.config.maxDate) < 0) ?
+                mLast : self.config.maxDate;
+
+        function tdClasses() {
+            var classes = '';
+            if (calDay.isSameDay(today)) {
+                classes += 'today';
+            }
+            if (calDay.isSameDay(self.selectedDate)) {
+                classes += ' selected';
+            }
+            if (calDay.compare(firstEnabled) < 0 ||
+                calDay.compare(lastEnabled) > 0) {
+                classes += ' disabled';
+            }
+
+            if (classes.length > 0) {
+                classes = ' class="' + classes + '"';
+            }
+            return classes;
+        }
+
+        var html = '<tbody><tr>';
+        for (; ; calDay.nextDay()) {
+            html += '<td' + tdClasses() + '><span class="datepickr-day">';
+            html += calDay.getDay() + '</span></td>';
+
+            if (calDay.isSameDay(calLast)) {
+                break;
+            }
+
+            if (calDay.getDayOfWeek() == DPDate.lastDayOfWeek()) {
+                html += "</tr><tr>";
+            }
+        }
+        html += '</tr></tbody>';
+
+        calendarBody.innerHTML = html;
     };
 
-    buildDays = function () {
-        var firstOfMonth = new Date(self.currentYearView, self.currentMonthView, 1).getDay(),
-            numDays = calcNumDays(),
-            calendarFragment = document.createDocumentFragment(),
-            row = document.createElement('tr'),
-            dayCount,
-            dayNumber,
-            today = '',
-            selected = '',
-            disabled = '',
-            workingDate;
+    updateMonthMenu = function () {
+        var startDate = self.showingDate.firstOfYear(),
+            month = (startDate.compare(self.config.minDate) < 0) ?
+                self.config.minDate.getMonth() : 0,
+            endDate = self.showingDate.lastOfYear(),
+            endMonth = (0 < endDate.compare(self.config.maxDate)) ?
+                self.config.maxDate.getMonth() : 11,
+            selected,
+            html = '';
 
-        // Offset the first day by the specified amount
-        firstOfMonth -= self.l10n.firstDayOfWeek;
-        if (firstOfMonth < 0) {
-            firstOfMonth += 7;
-        }
-
-        dayCount = firstOfMonth;
-        calendarBody.innerHTML = '';
-
-        // Add spacer to line up the first day of the month correctly
-        if (firstOfMonth > 0) {
-            row.innerHTML += '<td colspan="' + firstOfMonth + '">&nbsp;</td>';
-        }
-
-        // Start at 1 since there is no 0th day
-        for (dayNumber = 1; dayNumber <= numDays; dayNumber++) {
-            // if we have reached the end of a week, wrap to the next line
-            if (dayCount === 7) {
-                calendarFragment.appendChild(row);
-                row = document.createElement('tr');
-                dayCount = 0;
+        for (; month <= endMonth; month++) {
+            html += '<option value="' + month + '"';
+            if (self.showingDate.getMonth() === month) {
+                html += ' selected';
             }
-
-            today = isSpecificDay(dateNow.getDate(), dateNow.getMonth(), dateNow.getYear(), dayNumber) ? ' today' : '';
-            if (self.selectedDate) {
-                selected = isSpecificDay(self.selectedDate.day, self.selectedDate.month, self.selectedDate.year, dayNumber) ? ' selected' : '';
-            }
-
-            if (self.config.minDate || self.config.maxDate) {
-                workingDate = new Date(self.currentYearView, self.currentMonthView, dayNumber);
-                if ((self.config.minDate && workingDate < self.config.minDate) ||
-                    (self.config.maxDate && workingDate > self.config.maxDate)) {
-                    disabled = ' disabled';
-                } else {
-                    disabled = '';
-                }
-            }
-
-            row.innerHTML += '<td class="' + today + selected + disabled + '"><span class="datepickr-day">' + dayNumber + '</span></td>';
-            dayCount++;
-        }
-
-        calendarFragment.appendChild(row);
-        calendarBody.appendChild(calendarFragment);
-    };
-
-    updateNavigationChangingMonth = function () {
-        var html = '', month = 0, endMonth = 11, selected;
-
-        // XXX if we're outside the range, clamp to min or max and restart DOM update
-        if (self.config.minDate && new Date(self.currentYearView, 0) < self.config.minDate) {
-            month = self.config.minDate.getMonth(); // start after January
-        }
-
-        if (self.config.maxDate && self.config.maxDate < new Date(self.currentYearView, 11)) {
-            endMonth = self.config.maxDate.getMonth(); // end before December
-        }
-
-       for (; month <= endMonth; month++) {
-            selected = (month === self.currentMonthView) ? ' selected' : '';
-            html += '<option value="' + month + '"' + selected + '>';
-            html += monthToStr(month, self.config.shorthandCurrentMonth);
+            html += '>' + self.config.monthNames[month];
             html += '</option>';
         }
 
         return html;
     };
 
-    updateNavigationChangingYear = function () {
+    updateYearMenu = function () {
+        function whatYear(spec) {
+            var c = spec[0], year;
+            if (c == '-' || c == '+') { // relative to now
+                year = thisYear + parseInt(spec);
+            } else if (c == 'c') { // relative to current selection
+                year = self.showingDate.getYear() + parseInt(spec.substring(1));
+            } else { // absolute year
+                year = parseInt(spec);
+            }
+            return isNaN(year) ? thisYear : year;
+        };
+
         var thisYear = new Date().getFullYear(),
-            whatYear = function (spec) {
-                var year;
-                switch (spec[0]) {
-                case '-':
-                case '+': // relative to now
-                    year = thisYear + parseInt(spec);
-                    break;
-                case 'c': // relative to current selection
-                    year = self.currentYearView + parseInt(spec.substring(1));
-                    break;
-                default: // absolute year
-                    year = parseInt(spec);
-                    break;
-                }
-                return isNaN(year) ? thisYear : year;
-            },
             specs = self.config.yearRange.split(':'),
             year = whatYear(specs[0]),
             endYear = whatYear(specs[1] || ''),
+            showingYear = self.showingDate.getYear(),
             html = '';
 
-        if (self.config.minDate) {
-            year = Math.max(self.config.minDate.getFullYear(), year);
+        if (self.config.minDate && year < self.config.minDate.getYear()) {
+            year = self.config.minDate.getYear();
         }
-        if (self.config.maxDate) {
-            endYear = Math.min(self.config.maxDate.getFullYear(), endYear);
+        if (self.config.maxDate && endYear > self.config.maxDate.getYear()) {
+            endYear = self.config.maxDate.getYear();
         }
 
         for (; year <= endYear; year++) {
             html += '<option value="' + year + '"';
-            if (year === self.currentYearView) {
+            if (showingYear === year) {
                 html += ' selected';
             }
             html += '>' + year + '</option>';
         }
-
         return html;
     };
 
     updateNavigationCurrentDate = function () {
         navigationCurrentMonth.innerHTML = self.config.changeMonth ?
-            updateNavigationChangingMonth() :
-            monthToStr(self.currentMonthView, self.config.shorthandCurrentMonth);
+            updateMonthMenu() : self.config.monthNames[self.showingDate.getMonth()];
 
         navigationCurrentYear.innerHTML = self.config.changeYear ?
-            updateNavigationChangingYear() : self.currentYearView;
-    };
+            updateYearMenu() : self.showingDate.getYear();
 
-    buildNavigation = function () {
-        var dates = document.createElement('div'),
-            monthNavigation;
-
-        monthNavigation  = '<span class="datepickr-prev-month">&lt;</span>';
-        monthNavigation += '<span class="datepickr-next-month">&gt;</span>';
-
-        dates.className = 'datepickr-dates';
-        dates.innerHTML = monthNavigation;
-
-        dates.appendChild(navigationCurrentMonth);
-        dates.appendChild(navigationCurrentYear);
-
-        updateNavigationCurrentDate();
-        calendarContainer.appendChild(dates);
-    };
-
-    handleYearChange = function () {
-        if (self.currentMonthView < 0) {
-            self.currentYearView--;
-            self.currentMonthView = 11;
-        }
-
-        if (self.currentMonthView > 11) {
-            self.currentYearView++;
-            self.currentMonthView = 0;
-        }
+        // XXX disable next/prev month buttons if outside min/max
     };
 
     rebuildCalendar = function () {
-        updateNavigationCurrentDate();
-
-        while (calendarBody.lastChild) {
-            calendarBody.removeChild(calendarBody.lastChild);
+        if (self.showingDate.compare(self.config.minDate) < 0) {
+            self.showingDate = self.config.minDate.clone();
+        } else if (0 < self.showingDate.compare(self.config.maxDate)) {
+            self.showingDate = self.config.maxDate.clone();
         }
-        buildDays();
+
+        updateNavigationCurrentDate();
+        buildDaysInMonth();
     };
 
     monthChanged = function (event) {
-        self.currentMonthView = parseInt(navigationCurrentMonth.value);
-        // XXX clamp to range
+        self.showingDate.setMonth(parseInt(navigationCurrentMonth.value));
         rebuildCalendar();
     };
 
     yearChanged = function (event) {
-        self.currentYearView = parseInt(navigationCurrentYear.value);
-        // XXX clamp to range
+        self.showingDate.setYear(parseInt(navigationCurrentYear.value));
         rebuildCalendar();
     };
 
@@ -640,50 +532,50 @@ datepickr.init = function (element, instanceConfig) {
 
     calendarClick = function (event) {
         var target = event.target,
-            targetClass = target.className,
-            currentTimestamp;
+            targetClass = target.className;
 
         if (targetClass) {
-            if (targetClass === 'datepickr-prev-month' || targetClass === 'datepickr-next-month') {
+            if (targetClass === 'datepickr-prev-month' ||
+                targetClass === 'datepickr-next-month') {
+
                 if (targetClass === 'datepickr-prev-month') {
-                    self.currentMonthView--;
+                    self.showingDate.prevMonth();
                 } else {
-                    self.currentMonthView++;
+                    self.showingDate.nextMonth();
                 }
 
-                handleYearChange();
-                updateNavigationCurrentDate();
-                buildDays();
-            } else if (targetClass === 'datepickr-day' && !self.hasClass(target.parentNode, 'disabled')) {
-                self.selectedDate = {
-                    day: parseInt(target.innerHTML, 10),
-                    month: self.currentMonthView,
-                    year: self.currentYearView
-                };
-
-                currentTimestamp = new Date(self.currentYearView, self.currentMonthView, self.selectedDate.day).getTime();
+                rebuildCalendar();
+            } else if (targetClass === 'datepickr-day' &&
+                       !self.hasClass(target.parentNode, 'disabled')) {
+                self.selectedDate = self.showingDate.clone().setDay(
+                    parseInt(target.innerHTML, 10));
 
                 if (self.config.altInput) {
-                    if (self.config.altFormat) {
-                        self.config.altInput.value = formatDate(self.config.altFormat, currentTimestamp);
-                    } else {
-                        // I don't know why someone would want to do this... but just in case?
-                        self.config.altInput.value = formatDate(self.config.dateFormat, currentTimestamp);
-                    }
+                    self.config.altInput.value = self.selectedDate.strftime(self.config.altFormat);
                 }
-
-                self.element.value = formatDate(self.config.dateFormat, currentTimestamp);
+                self.element.value = self.selectedDate.strftime(self.config.dateFormat);
 
                 close();
-                buildDays();
+                buildDaysInMonth();
             }
         }
     };
 
+    buildNavigation = function () {
+        var dates = document.createElement('div');
+        dates.innerHTML = '<span class="datepickr-prev-month">&lt;</span>' +
+            '<span class="datepickr-next-month">&gt;</span>';
+        dates.className = 'datepickr-dates';
+
+        dates.appendChild(navigationCurrentMonth);
+        dates.appendChild(navigationCurrentYear);
+        calendarContainer.appendChild(dates);
+    };
+
     buildCalendar = function () {
         buildNavigation();
-        buildWeekdays();
-        buildDays();
+        buildDaysOfWeek();
+        rebuildCalendar();
 
         calendar.appendChild(calendarBody);
         calendarContainer.appendChild(calendar);
@@ -750,20 +642,10 @@ datepickr.init = function (element, instanceConfig) {
         }
 
         if (parsedDate && !isNaN(parsedDate)) {
-            parsedDate = new Date(parsedDate);
-            self.selectedDate = {
-                day: parsedDate.getDate(),
-                month: parsedDate.getMonth(),
-                year: parsedDate.getFullYear()
-            };
-            self.currentYearView = self.selectedDate.year;
-            self.currentMonthView = self.selectedDate.month;
-            self.currentDayView = self.selectedDate.day;
+            self.selectedDate = self.showingDate = new DPDate(parsedDate);
         } else {
             self.selectedDate = null;
-            self.currentYearView = dateNow.getYear();
-            self.currentMonthView = dateNow.getMonth();
-            self.currentDayView = dateNow.getDate();
+            self.showingDate = new DPDate();
         }
 
         wrap();
@@ -780,25 +662,11 @@ datepickr.init.prototype = {
     hasClass: function (element, className) { return element.classList.contains(className); },
     addClass: function (element, className) { element.classList.add(className); },
     removeClass: function (element, className) { element.classList.remove(className); },
-    forEach: function (items, callback) { [].forEach.call(items, callback); },
     querySelectorAll: document.querySelectorAll.bind(document),
-    isArray: Array.isArray,
     addEventListener: function (element, type, listener, useCapture) {
         element.addEventListener(type, listener, useCapture);
     },
     removeEventListener: function (element, type, listener, useCapture) {
         element.removeEventListener(type, listener, useCapture);
     },
-    l10n: {
-        weekdays: {
-            shorthand: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-            longhand: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-        },
-        months: {
-            shorthand: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            longhand: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-        },
-        daysInMonth: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31],
-        firstDayOfWeek: 0
-    }
 };

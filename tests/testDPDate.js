@@ -55,6 +55,14 @@ QUnit.test("DPDate Constructor", function(assert) {
     assert.equal(d.getDayOfWeek(), 0); // Sunday
 });
 
+
+QUnit.test("clone", function(assert) {
+    var d = new DPDate(1999, 9, 9), e = d.clone();
+
+    e.setYear(2010).setMonth(8).setDay(23);
+    assert.notDeepEqual(d, e, "changing clone's date doesn't affect original");
+});
+
 QUnit.test("setYear", function(assert) {
     var d = new DPDate(1993, 3, 7);
     d.setYear(1995);
@@ -103,6 +111,29 @@ QUnit.test("setDay", function(assert) {
     d.setDay(-1);
     assert.equal(d.getMonth(), 7, "wraps to prev month");
     assert.equal(d.getDay(), 30, "wraps to prev month");
+});
+
+QUnit.test("compare", function(assert) {
+    var d, e;
+
+    d = new DPDate(2014, 3, 3);
+    e = new DPDate(2014, 3, 3);
+    assert.ok(d.compare(e) == 0, "same date = 0");
+
+    e = new DPDate(2014, 3, 5);
+    assert.ok(d.compare(e) < 0, "second date later (d < e == negative)");
+
+    e = new DPDate(2014, 3, 1);
+    assert.ok(d.compare(e) > 0, "second date earlier > 0 (d > e == positive)");
+
+    e = new DPDate(2014, 4, 3);
+    assert.ok(d.compare(e) < 0, "month different => !0");
+
+    e = new DPDate(2013, 3, 3);
+    assert.ok(d.compare(e) > 0, "year different => !0");
+
+    e = null;
+    assert.ok(d.compare(e) === null, "falsy second date => null");
 });
 
 QUnit.test("isSameDay", function(assert) {
@@ -194,34 +225,20 @@ QUnit.test("prevMonth", function(assert) {
     assert.deepEqual(d.prevMonth(), e, "wraps to prev year");
 });
 
-QUnit.test("clamp", function(assert) {
-    var d, e, min, max;
+QUnit.test("firstOfYear", function(assert) {
+    var d, e;
 
-    d = new DPDate(2010, 5, 9);
-    e = Object.create(d);
-    min = new DPDate(2010, 2, 1);
-    max = new DPDate(2011, 1, 1);
-    assert.deepEqual(d.clamp(min, max), e, "doesn't change date inside range");
+    d = new DPDate("October 8, 2012");
+    e = new DPDate("Jan 1, 2012");
+    assert.deepEqual(d.firstOfYear().date, e.date);
+});
 
-    d = new DPDate(1970, 1, 1);
-    min = new DPDate(1976, 2, 3);
-    max = new DPDate(1979, 3, 4);
-    assert.deepEqual(d.clamp(min, max), min, "clamps earlier date");
+QUnit.test("lastOfYear", function(assert) {
+    var d, e;
 
-    d = new DPDate(1980, 6, 6);
-    min = new DPDate(1976, 2, 3);
-    max = new DPDate(1979, 3, 4);
-    assert.deepEqual(d.clamp(min, max), max, "clamps later date");
-
-    d = new DPDate(2000, 1, 2);
-    e = Object.create(d);
-    max = new DPDate();
-    assert.deepEqual(d.clamp(null, max), e, "ignores missing min");
-
-    d = new DPDate(2002, 2, 4);
-    e = Object.create(d);
-    min = new DPDate(1990, 9, 9);
-    assert.deepEqual(d.clamp(min, null), e, "ignores missing max");
+    d = new DPDate("Nov, 3, 2013");
+    e = new DPDate("Dec 31, 2013");
+    assert.deepEqual(d.lastOfYear().date, e.date);
 });
 
 QUnit.test("firstCalendarDay", function(assert) {
