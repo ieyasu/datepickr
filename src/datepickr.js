@@ -19,12 +19,8 @@ function datepickr(selector, config) {
         i;
 
     function createInstance(element) {
-        if (element._datepickr) {
-            element._datepickr.destroy();
-        }
-        element._datepickr = new datepickr.init(element, config);
-        return element._datepickr;
-    };
+        return new datepickr.init(element, config);
+    }
 
     if (selector.nodeName) {
         return createInstance(selector);
@@ -42,9 +38,6 @@ function datepickr(selector, config) {
     return instances;
 };
 
-/**
- * @constructor
- */
 datepickr.init = function(element, instanceConfig) {
     'use strict';
     var self = this,
@@ -68,6 +61,11 @@ datepickr.init = function(element, instanceConfig) {
         wrapperElement,
         showingDate,
         selectedDate;
+
+    if (element._datepickr) {
+        element._datepickr.destroy();
+    }
+    element._datepickr = this;
 
     if (instanceConfig) {
         config = {};
@@ -339,7 +337,7 @@ datepickr.init = function(element, instanceConfig) {
         return (self.element.nodeName === 'INPUT') ? 'focus' : 'click';
     }
 
-    function bind() {
+    function bind() { // only called once below
         function stopEvent(ev) { ev.preventDefault(); };
 
         if (config.changeMonth) {
