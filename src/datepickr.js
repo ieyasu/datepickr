@@ -293,11 +293,8 @@ datepickr.init = function (element, instanceConfig) {
         showingDate,
         selectedDate,
         wrap,
-        isSpecificDay,
         buildDaysOfWeek,
-        calcNumDays,
         buildDaysInMonth,
-        currentYearRange,
         updateMonthMenu,
         updateYearMenu,
         updateNavigationCurrentDate,
@@ -376,7 +373,7 @@ datepickr.init = function (element, instanceConfig) {
 
     // each day in the month, and overlap
     buildDaysInMonth = function () {
-        var sd = self.showingDate,
+        var sd = showingDate,
             calDay = sd.firstCalendarDay(),
             calLast = sd.lastCalendarDay(),
             today = new DPDate(),
@@ -392,7 +389,7 @@ datepickr.init = function (element, instanceConfig) {
             if (calDay.isSameDay(today)) {
                 classes += 'today';
             }
-            if (calDay.isSameDay(self.selectedDate)) {
+            if (calDay.isSameDay(selectedDate)) {
                 classes += ' selected';
             }
             if (calDay.compare(firstEnabled) < 0 ||
@@ -425,18 +422,17 @@ datepickr.init = function (element, instanceConfig) {
     };
 
     updateMonthMenu = function () {
-        var startDate = self.showingDate.firstOfYear(),
+        var startDate = showingDate.firstOfYear(),
             month = (startDate.compare(self.config.minDate) < 0) ?
                 self.config.minDate.getMonth() : 0,
-            endDate = self.showingDate.lastOfYear(),
+            endDate = showingDate.lastOfYear(),
             endMonth = (0 < endDate.compare(self.config.maxDate)) ?
                 self.config.maxDate.getMonth() : 11,
-            selected,
             html = '';
 
         for (; month <= endMonth; month++) {
             html += '<option value="' + month + '"';
-            if (self.showingDate.getMonth() === month) {
+            if (showingDate.getMonth() === month) {
                 html += ' selected';
             }
             html += '>' + self.config.monthNames[month];
@@ -452,7 +448,7 @@ datepickr.init = function (element, instanceConfig) {
             if (c == '-' || c == '+') { // relative to now
                 year = thisYear + parseInt(spec);
             } else if (c == 'c') { // relative to current selection
-                year = self.showingDate.getYear() + parseInt(spec.substring(1));
+                year = showingDate.getYear() + parseInt(spec.substring(1));
             } else { // absolute year
                 year = parseInt(spec);
             }
@@ -463,7 +459,7 @@ datepickr.init = function (element, instanceConfig) {
             specs = self.config.yearRange.split(':'),
             year = whatYear(specs[0]),
             endYear = whatYear(specs[1] || ''),
-            showingYear = self.showingDate.getYear(),
+            showingYear = showingDate.getYear(),
             html = '';
 
         if (self.config.minDate && year < self.config.minDate.getYear()) {
@@ -485,32 +481,32 @@ datepickr.init = function (element, instanceConfig) {
 
     updateNavigationCurrentDate = function () {
         navigationCurrentMonth.innerHTML = self.config.changeMonth ?
-            updateMonthMenu() : self.config.monthNames[self.showingDate.getMonth()];
+            updateMonthMenu() : self.config.monthNames[showingDate.getMonth()];
 
         navigationCurrentYear.innerHTML = self.config.changeYear ?
-            updateYearMenu() : self.showingDate.getYear();
+            updateYearMenu() : showingDate.getYear();
 
         // XXX disable next/prev month buttons if outside min/max
     };
 
     rebuildCalendar = function () {
-        if (self.showingDate.compare(self.config.minDate) < 0) {
-            self.showingDate = self.config.minDate.clone();
-        } else if (0 < self.showingDate.compare(self.config.maxDate)) {
-            self.showingDate = self.config.maxDate.clone();
+        if (showingDate.compare(self.config.minDate) < 0) {
+            showingDate = self.config.minDate.clone();
+        } else if (0 < showingDate.compare(self.config.maxDate)) {
+            showingDate = self.config.maxDate.clone();
         }
 
         updateNavigationCurrentDate();
         buildDaysInMonth();
     };
 
-    monthChanged = function (event) {
-        self.showingDate.setMonth(parseInt(navigationCurrentMonth.value));
+    monthChanged = function () {
+        showingDate.setMonth(parseInt(navigationCurrentMonth.value));
         rebuildCalendar();
     };
 
-    yearChanged = function (event) {
-        self.showingDate.setYear(parseInt(navigationCurrentYear.value));
+    yearChanged = function () {
+        showingDate.setYear(parseInt(navigationCurrentYear.value));
         rebuildCalendar();
     };
 
@@ -539,21 +535,21 @@ datepickr.init = function (element, instanceConfig) {
                 targetClass === 'datepickr-next-month') {
 
                 if (targetClass === 'datepickr-prev-month') {
-                    self.showingDate.prevMonth();
+                    showingDate.prevMonth();
                 } else {
-                    self.showingDate.nextMonth();
+                    showingDate.nextMonth();
                 }
 
                 rebuildCalendar();
             } else if (targetClass === 'datepickr-day' &&
                        !target.parentNode.classList.contains('disabled')) {
-                self.selectedDate = self.showingDate.clone().setDay(
+                selectedDate = showingDate.clone().setDay(
                     parseInt(target.innerHTML, 10));
 
                 if (self.config.altInput) {
-                    self.config.altInput.value = self.selectedDate.strftime(self.config.altFormat);
+                    self.config.altInput.value = selectedDate.strftime(self.config.altFormat);
                 }
-                self.element.value = self.selectedDate.strftime(self.config.dateFormat);
+                self.element.value = selectedDate.strftime(self.config.dateFormat);
 
                 close();
                 buildDaysInMonth();
@@ -642,10 +638,10 @@ datepickr.init = function (element, instanceConfig) {
         }
 
         if (parsedDate && !isNaN(parsedDate)) {
-            self.selectedDate = self.showingDate = new DPDate(parsedDate);
+            selectedDate = showingDate = new DPDate(parsedDate);
         } else {
-            self.selectedDate = null;
-            self.showingDate = new DPDate();
+            selectedDate = null;
+            showingDate = new DPDate();
         }
 
         wrap();

@@ -39,7 +39,7 @@ If your input has a value attribute on page load, or anytime before the datepick
 
 DPDate handles leap years according to the [algorithm](http://en.wikipedia.org/wiki/Leap_year#Algorithm) given by Wikipedia for the Gregorian Calendar.
 
-datepickr is minified using the Google Closure Compiler.
+datepickr is minified using [UglifyJS2](https://github.com/mishoo/UglifyJS2).
 
 
 ### Browser Support
