@@ -60,11 +60,11 @@ datepickr.init = function(element, instanceConfig) {
             abbreviateMonth: false
         },
         config,
-        calendarContainer = document.createElement('div'),
+        calendarContainer = newElem('div', '-calendar'),
+        calendar = newElem('table'),
+        calendarBody = newElem('tbody'),
         navigationCurrentMonth,
         navigationCurrentYear,
-        calendar = document.createElement('table'),
-        calendarBody = document.createElement('tbody'),
         wrapperElement,
         showingDate,
         selectedDate;
@@ -93,19 +93,21 @@ datepickr.init = function(element, instanceConfig) {
     config.monthNames = config.abbreviateMonth ?
         DPDate.monthAbbrevs : DPDate.months;
 
-    calendarContainer.className = 'datepickr-calendar';
-
     (function() {
         var tagName;
 
         tagName = config.changeMonth ? 'select' : 'span';
-        navigationCurrentMonth = document.createElement(tagName);
-        navigationCurrentMonth.className = 'datepickr-current-month';
+        navigationCurrentMonth = newElem(tagName, '-current-month');
 
         tagName = config.changeYear ? 'select' : 'span';
-        navigationCurrentYear = document.createElement(tagName);
-        navigationCurrentYear.className = 'datepickr-current-year';
+        navigationCurrentYear = newElem(tagName, '-current-year');
     })();
+
+    function newElem(tagName, cls) {
+        var e = document.createElement(tagName);
+        if (cls) e.className = 'datepickr' + cls;
+        return e;
+    }
 
     // each day in the month, and overlap
     function buildDaysInMonth() {
@@ -294,10 +296,9 @@ datepickr.init = function(element, instanceConfig) {
     }
 
     function buildNavigation() {
-        var dates = document.createElement('div');
+        var dates = newElem('div', '-dates');
         dates.innerHTML = '<span class="datepickr-prev-month">&lt;</span>' +
             '<span class="datepickr-next-month">&gt;</span>';
-        dates.className = 'datepickr-dates';
 
         dates.appendChild(navigationCurrentMonth);
         dates.appendChild(navigationCurrentYear);
@@ -306,7 +307,7 @@ datepickr.init = function(element, instanceConfig) {
 
     // Sun/Mon Tue ... Fri Sat/Sun column headers
     function buildDaysOfWeek() {
-        var weekdayContainer = document.createElement('thead'),
+        var weekdayContainer = newElem('thead'),
             dayNames = DPDate.weekdaysInCalendarOrder();
 
         weekdayContainer.innerHTML = '<tr><th>' + dayNames.join('</th><th>') + '</th></tr>';
@@ -369,8 +370,7 @@ datepickr.init = function(element, instanceConfig) {
     }
 
     function wrap() { // only called once below
-        wrapperElement = document.createElement('div');
-        wrapperElement.className = 'datepickr-wrapper';
+        wrapperElement = newElem('div', '-wrapper');
         self.element.parentNode.insertBefore(wrapperElement, self.element);
         wrapperElement.appendChild(self.element);
     }
