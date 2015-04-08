@@ -107,22 +107,6 @@ datepickr.init = function(element, instanceConfig) {
         navigationCurrentYear.className = 'datepickr-current-year';
     })();
 
-    function wrap() {
-        wrapperElement = document.createElement('div');
-        wrapperElement.className = 'datepickr-wrapper';
-        self.element.parentNode.insertBefore(wrapperElement, self.element);
-        wrapperElement.appendChild(self.element);
-    }
-
-    // Sun/Mon Tue ... Fri Sat/Sun column headers
-    function buildDaysOfWeek() {
-        var weekdayContainer = document.createElement('thead'),
-            dayNames = DPDate.weekdaysInCalendarOrder();
-
-        weekdayContainer.innerHTML = '<tr><th>' + dayNames.join('</th><th>') + '</th></tr>';
-        calendar.appendChild(weekdayContainer);
-    }
-
     // each day in the month, and overlap
     function buildDaysInMonth() {
         var sd = showingDate,
@@ -320,6 +304,15 @@ datepickr.init = function(element, instanceConfig) {
         calendarContainer.appendChild(dates);
     }
 
+    // Sun/Mon Tue ... Fri Sat/Sun column headers
+    function buildDaysOfWeek() {
+        var weekdayContainer = document.createElement('thead'),
+            dayNames = DPDate.weekdaysInCalendarOrder();
+
+        weekdayContainer.innerHTML = '<tr><th>' + dayNames.join('</th><th>') + '</th></tr>';
+        calendar.appendChild(weekdayContainer);
+    }
+
     function buildCalendar() {
         buildNavigation();
         buildDaysOfWeek();
@@ -331,11 +324,18 @@ datepickr.init = function(element, instanceConfig) {
         wrapperElement.appendChild(calendarContainer);
     }
 
+    function open() {
+        document.addEventListener('click', documentClick);
+        wrapperElement.classList.add('open');
+    }
+
+    function close() {
+        document.removeEventListener('click', documentClick);
+        wrapperElement.classList.remove('open');
+    }
+
     function getOpenEvent() {
-        if (self.element.nodeName === 'INPUT') {
-            return 'focus';
-        }
-        return 'click';
+        return (self.element.nodeName === 'INPUT') ? 'focus' : 'click';
     }
 
     function bind() {
@@ -355,17 +355,7 @@ datepickr.init = function(element, instanceConfig) {
         calendarContainer.addEventListener('click', calendarClick);
     }
 
-    function open() {
-        document.addEventListener('click', documentClick);
-        wrapperElement.classList.add('open');
-    }
-
-    function close() {
-        document.removeEventListener('click', documentClick);
-        wrapperElement.classList.remove('open');
-    }
-
-    function destroy() {
+    self.destroy = function() { // export for us in datepickr()
         var parent,
             element;
 
@@ -378,10 +368,15 @@ datepickr.init = function(element, instanceConfig) {
         parent.parentNode.replaceChild(element, parent);
     }
 
+    function wrap() { // only called once below
+        wrapperElement = document.createElement('div');
+        wrapperElement.className = 'datepickr-wrapper';
+        self.element.parentNode.insertBefore(wrapperElement, self.element);
+        wrapperElement.appendChild(self.element);
+    }
+
     function init() {
         var parsedDate;
-
-        self.destroy = destroy; // export
 
         self.element = element;
 
