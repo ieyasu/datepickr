@@ -18,8 +18,6 @@ function datepickr(selector, config) {
         instances = [],
         i;
 
-    datepickr.prototype = datepickr.init.prototype;
-
     function createInstance(element) {
         if (element._datepickr) {
             element._datepickr.destroy();
