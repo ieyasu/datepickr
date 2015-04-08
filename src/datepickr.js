@@ -59,6 +59,7 @@ datepickr.init = function(element, instanceConfig) {
             yearRange: "c-10:c+10",
             abbreviateMonth: false
         },
+        config,
         calendarContainer = document.createElement('div'),
         navigationCurrentMonth,
         navigationCurrentYear,
@@ -68,45 +69,40 @@ datepickr.init = function(element, instanceConfig) {
         showingDate,
         selectedDate;
 
-    function initConfig() {
-        var config;
-
-        instanceConfig = instanceConfig || {};
-
-        self.config = {};
-
-        for (config in defaultConfig) {
-            self.config[config] = instanceConfig[config] || defaultConfig[config];
+    if (instanceConfig) {
+        config = {};
+        for (var key in defaultConfig) {
+            config[key] = instanceConfig[key] || defaultConfig[key];
         }
-
-        // convert from Date to DPDate
-        if (self.config.minDate && self.config.minDate.getTime) {
-            self.config.minDate = new DPDate(self.config.minDate.getTime());
-        }
-        if (self.config.maxDate && self.config.maxDate.getTime) {
-            self.config.maxDate = new DPDate(self.config.maxDate.getTime());
-        }
-
-        if (self.config.altInput && !self.config.altFormat) {
-            self.config.altFormat = self.config.dateFormat;
-        }
-
-        self.config.monthNames = self.config.abbreviateMonth ?
-            DPDate.monthAbbrevs : DPDate.months;
+    } else {
+        config = defaultConfig;
     }
 
-    initConfig();
+    // convert from Date to DPDate
+    if (config.minDate && config.minDate.getTime) {
+        config.minDate = new DPDate(config.minDate.getTime());
+    }
+    if (config.maxDate && config.maxDate.getTime) {
+        config.maxDate = new DPDate(config.maxDate.getTime());
+    }
+
+    if (config.altInput && !config.altFormat) {
+        config.altFormat = config.dateFormat;
+    }
+
+    config.monthNames = config.abbreviateMonth ?
+        DPDate.monthAbbrevs : DPDate.months;
 
     calendarContainer.className = 'datepickr-calendar';
 
     (function() {
         var tagName;
 
-        tagName = self.config.changeMonth ? 'select' : 'span';
+        tagName = config.changeMonth ? 'select' : 'span';
         navigationCurrentMonth = document.createElement(tagName);
         navigationCurrentMonth.className = 'datepickr-current-month';
 
-        tagName = self.config.changeYear ? 'select' : 'span';
+        tagName = config.changeYear ? 'select' : 'span';
         navigationCurrentYear = document.createElement(tagName);
         navigationCurrentYear.className = 'datepickr-current-year';
     })();
@@ -134,11 +130,11 @@ datepickr.init = function(element, instanceConfig) {
             calLast = sd.lastCalendarDay(),
             today = new DPDate(),
             mFirst = sd.firstOfMonth(),
-            firstEnabled = (mFirst.compare(self.config.minDate) < 0) ?
-                self.config.minDate : mFirst,
+            firstEnabled = (mFirst.compare(config.minDate) < 0) ?
+                config.minDate : mFirst,
             mLast = sd.lastOfMonth(),
-            lastEnabled = (mLast.compare(self.config.maxDate) < 0) ?
-                mLast : self.config.maxDate;
+            lastEnabled = (mLast.compare(config.maxDate) < 0) ?
+                mLast : config.maxDate;
 
         function tdClasses() {
             var classes = '';
@@ -179,11 +175,11 @@ datepickr.init = function(element, instanceConfig) {
 
     function updateMonthMenu() {
         var startDate = showingDate.firstOfYear(),
-            month = (startDate.compare(self.config.minDate) < 0) ?
-                self.config.minDate.getMonth() : 0,
+            month = (startDate.compare(config.minDate) < 0) ?
+                config.minDate.getMonth() : 0,
             endDate = showingDate.lastOfYear(),
-            endMonth = (0 < endDate.compare(self.config.maxDate)) ?
-                self.config.maxDate.getMonth() : 11,
+            endMonth = (0 < endDate.compare(config.maxDate)) ?
+                config.maxDate.getMonth() : 11,
             html = '';
 
         for (; month <= endMonth; month++) {
@@ -191,7 +187,7 @@ datepickr.init = function(element, instanceConfig) {
             if (showingDate.getMonth() === month) {
                 html += ' selected';
             }
-            html += '>' + self.config.monthNames[month];
+            html += '>' + config.monthNames[month];
             html += '</option>';
         }
 
@@ -212,17 +208,17 @@ datepickr.init = function(element, instanceConfig) {
         };
 
         var thisYear = new Date().getFullYear(),
-            specs = self.config.yearRange.split(':'),
+            specs = config.yearRange.split(':'),
             year = whatYear(specs[0]),
             endYear = whatYear(specs[1] || ''),
             showingYear = showingDate.getYear(),
             html = '';
 
-        if (self.config.minDate && year < self.config.minDate.getYear()) {
-            year = self.config.minDate.getYear();
+        if (config.minDate && year < config.minDate.getYear()) {
+            year = config.minDate.getYear();
         }
-        if (self.config.maxDate && endYear > self.config.maxDate.getYear()) {
-            endYear = self.config.maxDate.getYear();
+        if (config.maxDate && endYear > config.maxDate.getYear()) {
+            endYear = config.maxDate.getYear();
         }
 
         for (; year <= endYear; year++) {
@@ -236,20 +232,20 @@ datepickr.init = function(element, instanceConfig) {
     }
 
     function updateNavigationCurrentDate() {
-        navigationCurrentMonth.innerHTML = self.config.changeMonth ?
-            updateMonthMenu() : self.config.monthNames[showingDate.getMonth()];
+        navigationCurrentMonth.innerHTML = config.changeMonth ?
+            updateMonthMenu() : config.monthNames[showingDate.getMonth()];
 
-        navigationCurrentYear.innerHTML = self.config.changeYear ?
+        navigationCurrentYear.innerHTML = config.changeYear ?
             updateYearMenu() : showingDate.getYear();
 
         // XXX disable next/prev month buttons if outside min/max
     }
 
     function rebuildCalendar() {
-        if (showingDate.compare(self.config.minDate) < 0) {
-            showingDate = self.config.minDate.clone();
-        } else if (0 < showingDate.compare(self.config.maxDate)) {
-            showingDate = self.config.maxDate.clone();
+        if (showingDate.compare(config.minDate) < 0) {
+            showingDate = config.minDate.clone();
+        } else if (0 < showingDate.compare(config.maxDate)) {
+            showingDate = config.maxDate.clone();
         }
 
         updateNavigationCurrentDate();
@@ -302,10 +298,10 @@ datepickr.init = function(element, instanceConfig) {
                 selectedDate = showingDate.clone().setDay(
                     parseInt(target.innerHTML, 10));
 
-                if (self.config.altInput) {
-                    self.config.altInput.value = selectedDate.strftime(self.config.altFormat);
+                if (config.altInput) {
+                    config.altInput.value = selectedDate.strftime(config.altFormat);
                 }
-                self.element.value = selectedDate.strftime(self.config.dateFormat);
+                self.element.value = selectedDate.strftime(config.dateFormat);
 
                 close();
                 buildDaysInMonth();
@@ -345,12 +341,12 @@ datepickr.init = function(element, instanceConfig) {
     function bind() {
         function stopEvent(ev) { ev.preventDefault(); };
 
-        if (self.config.changeMonth) {
+        if (config.changeMonth) {
             navigationCurrentMonth.addEventListener('click', stopEvent);
             navigationCurrentMonth.addEventListener('change', monthChanged);
         }
 
-        if (self.config.changeYear) {
+        if (config.changeYear) {
             navigationCurrentYear.addEventListener('click', stopEvent);
             navigationCurrentYear.addEventListener('change', yearChanged);
         }
@@ -385,7 +381,7 @@ datepickr.init = function(element, instanceConfig) {
     function init() {
         var parsedDate;
 
-        self.destroy = destroy;
+        self.destroy = destroy; // export
 
         self.element = element;
 
