@@ -11,7 +11,7 @@
     http://www.wtfpl.net/ for more details.
 */
 
-var datepickr = function (selector, config) {
+function datepickr(selector, config) {
     'use strict';
     var elements,
         createInstance,
@@ -20,7 +20,7 @@ var datepickr = function (selector, config) {
 
     datepickr.prototype = datepickr.init.prototype;
 
-    createInstance = function (element) {
+    function createInstance(element) {
         if (element._datepickr) {
             element._datepickr.destroy();
         }
@@ -47,7 +47,7 @@ var datepickr = function (selector, config) {
 /**
  * @constructor
  */
-datepickr.init = function (element, instanceConfig) {
+datepickr.init = function(element, instanceConfig) {
     'use strict';
     var self = this,
         defaultConfig = {
@@ -61,7 +61,6 @@ datepickr.init = function (element, instanceConfig) {
             yearRange: "c-10:c+10",
             abbreviateMonth: false
         },
-        initConfig,
         calendarContainer = document.createElement('div'),
         navigationCurrentMonth,
         navigationCurrentYear,
@@ -69,28 +68,9 @@ datepickr.init = function (element, instanceConfig) {
         calendarBody = document.createElement('tbody'),
         wrapperElement,
         showingDate,
-        selectedDate,
-        wrap,
-        buildDaysOfWeek,
-        buildDaysInMonth,
-        updateMonthMenu,
-        updateYearMenu,
-        updateNavigationCurrentDate,
-        buildNavigation,
-        rebuildCalendar,
-        monthChanged,
-        yearChanged,
-        documentClick,
-        calendarClick,
-        buildCalendar,
-        getOpenEvent,
-        bind,
-        open,
-        close,
-        destroy,
-        init;
+        selectedDate;
 
-    initConfig = function () {
+    function initConfig() {
         var config;
 
         instanceConfig = instanceConfig || {};
@@ -115,13 +95,13 @@ datepickr.init = function (element, instanceConfig) {
 
         self.config.monthNames = self.config.abbreviateMonth ?
             DPDate.monthAbbrevs : DPDate.months;
-    };
+    }
 
     initConfig();
 
     calendarContainer.className = 'datepickr-calendar';
 
-    (function () {
+    (function() {
         var tagName;
 
         tagName = self.config.changeMonth ? 'select' : 'span';
@@ -133,24 +113,24 @@ datepickr.init = function (element, instanceConfig) {
         navigationCurrentYear.className = 'datepickr-current-year';
     })();
 
-    wrap = function () {
+    function wrap() {
         wrapperElement = document.createElement('div');
         wrapperElement.className = 'datepickr-wrapper';
         self.element.parentNode.insertBefore(wrapperElement, self.element);
         wrapperElement.appendChild(self.element);
-    };
+    }
 
     // Sun/Mon Tue ... Fri Sat/Sun column headers
-    buildDaysOfWeek = function () {
+    function buildDaysOfWeek() {
         var weekdayContainer = document.createElement('thead'),
             dayNames = DPDate.weekdaysInCalendarOrder();
 
         weekdayContainer.innerHTML = '<tr><th>' + dayNames.join('</th><th>') + '</th></tr>';
         calendar.appendChild(weekdayContainer);
-    };
+    }
 
     // each day in the month, and overlap
-    buildDaysInMonth = function () {
+    function buildDaysInMonth() {
         var sd = showingDate,
             calDay = sd.firstCalendarDay(),
             calLast = sd.lastCalendarDay(),
@@ -197,9 +177,9 @@ datepickr.init = function (element, instanceConfig) {
         html += '</tr></tbody>';
 
         calendarBody.innerHTML = html;
-    };
+    }
 
-    updateMonthMenu = function () {
+    function updateMonthMenu() {
         var startDate = showingDate.firstOfYear(),
             month = (startDate.compare(self.config.minDate) < 0) ?
                 self.config.minDate.getMonth() : 0,
@@ -218,9 +198,9 @@ datepickr.init = function (element, instanceConfig) {
         }
 
         return html;
-    };
+    }
 
-    updateYearMenu = function () {
+    function updateYearMenu() {
         function whatYear(spec) {
             var c = spec[0], year;
             if (c == '-' || c == '+') { // relative to now
@@ -255,9 +235,9 @@ datepickr.init = function (element, instanceConfig) {
             html += '>' + year + '</option>';
         }
         return html;
-    };
+    }
 
-    updateNavigationCurrentDate = function () {
+    function updateNavigationCurrentDate() {
         navigationCurrentMonth.innerHTML = self.config.changeMonth ?
             updateMonthMenu() : self.config.monthNames[showingDate.getMonth()];
 
@@ -265,9 +245,9 @@ datepickr.init = function (element, instanceConfig) {
             updateYearMenu() : showingDate.getYear();
 
         // XXX disable next/prev month buttons if outside min/max
-    };
+    }
 
-    rebuildCalendar = function () {
+    function rebuildCalendar() {
         if (showingDate.compare(self.config.minDate) < 0) {
             showingDate = self.config.minDate.clone();
         } else if (0 < showingDate.compare(self.config.maxDate)) {
@@ -276,19 +256,19 @@ datepickr.init = function (element, instanceConfig) {
 
         updateNavigationCurrentDate();
         buildDaysInMonth();
-    };
+    }
 
-    monthChanged = function () {
+    function monthChanged() {
         showingDate.setMonth(parseInt(navigationCurrentMonth.value));
         rebuildCalendar();
-    };
+    }
 
-    yearChanged = function () {
+    function yearChanged() {
         showingDate.setYear(parseInt(navigationCurrentYear.value));
         rebuildCalendar();
-    };
+    }
 
-    documentClick = function (event) {
+    function documentClick(event) {
         var parent;
         if (event.target !== self.element && event.target !== wrapperElement) {
             parent = event.target.parentNode;
@@ -302,9 +282,9 @@ datepickr.init = function (element, instanceConfig) {
                 }
             }
         }
-    };
+    }
 
-    calendarClick = function (event) {
+    function calendarClick(event) {
         var target = event.target,
             targetClass = target.className;
 
@@ -333,9 +313,9 @@ datepickr.init = function (element, instanceConfig) {
                 buildDaysInMonth();
             }
         }
-    };
+    }
 
-    buildNavigation = function () {
+    function buildNavigation() {
         var dates = document.createElement('div');
         dates.innerHTML = '<span class="datepickr-prev-month">&lt;</span>' +
             '<span class="datepickr-next-month">&gt;</span>';
@@ -344,9 +324,9 @@ datepickr.init = function (element, instanceConfig) {
         dates.appendChild(navigationCurrentMonth);
         dates.appendChild(navigationCurrentYear);
         calendarContainer.appendChild(dates);
-    };
+    }
 
-    buildCalendar = function () {
+    function buildCalendar() {
         buildNavigation();
         buildDaysOfWeek();
         rebuildCalendar();
@@ -355,17 +335,17 @@ datepickr.init = function (element, instanceConfig) {
         calendarContainer.appendChild(calendar);
 
         wrapperElement.appendChild(calendarContainer);
-    };
+    }
 
-    getOpenEvent = function () {
+    function getOpenEvent() {
         if (self.element.nodeName === 'INPUT') {
             return 'focus';
         }
         return 'click';
-    };
+    }
 
-    bind = function () {
-        var stopEvent = function (ev) { ev.preventDefault(); };
+    function bind() {
+        function stopEvent(ev) { ev.preventDefault(); };
 
         if (self.config.changeMonth) {
             navigationCurrentMonth.addEventListener('click', stopEvent);
@@ -379,19 +359,19 @@ datepickr.init = function (element, instanceConfig) {
 
         self.element.addEventListener(getOpenEvent(), open);
         calendarContainer.addEventListener('click', calendarClick);
-    };
+    }
 
-    open = function () {
+    function open() {
         document.addEventListener('click', documentClick);
         wrapperElement.classList.add('open');
-    };
+    }
 
-    close = function () {
+    function close() {
         document.removeEventListener('click', documentClick);
         wrapperElement.classList.remove('open');
-    };
+    }
 
-    destroy = function () {
+    function destroy() {
         var parent,
             element;
 
@@ -402,9 +382,9 @@ datepickr.init = function (element, instanceConfig) {
         parent.removeChild(calendarContainer);
         element = parent.removeChild(self.element);
         parent.parentNode.replaceChild(element, parent);
-    };
+    }
 
-    init = function () {
+    function init() {
         var parsedDate;
 
         self.destroy = destroy;
@@ -425,8 +405,7 @@ datepickr.init = function (element, instanceConfig) {
         wrap();
         buildCalendar();
         bind();
-    };
-
+    }
     init();
 
     return self;
