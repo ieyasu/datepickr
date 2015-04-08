@@ -254,7 +254,7 @@ var datepickr = function (selector, config) {
         return createInstance(selector);
     }
 
-    elements = datepickr.prototype.querySelectorAll(selector);
+    elements = document.querySelectorAll(selector);
 
     if (elements.length === 1) {
         return createInstance(elements[0]);
@@ -546,7 +546,7 @@ datepickr.init = function (element, instanceConfig) {
 
                 rebuildCalendar();
             } else if (targetClass === 'datepickr-day' &&
-                       !self.hasClass(target.parentNode, 'disabled')) {
+                       !target.parentNode.classList.contains('disabled')) {
                 self.selectedDate = self.showingDate.clone().setDay(
                     parseInt(target.innerHTML, 10));
 
@@ -594,35 +594,35 @@ datepickr.init = function (element, instanceConfig) {
         var stopEvent = function (ev) { ev.preventDefault(); };
 
         if (self.config.changeMonth) {
-            self.addEventListener(navigationCurrentMonth, 'click', stopEvent, false);
-            self.addEventListener(navigationCurrentMonth, 'change', monthChanged, false);
+            navigationCurrentMonth.addEventListener('click', stopEvent);
+            navigationCurrentMonth.addEventListener('change', monthChanged);
         }
 
         if (self.config.changeYear) {
-            self.addEventListener(navigationCurrentYear, 'click', stopEvent, false);
-            self.addEventListener(navigationCurrentYear, 'change', yearChanged, false);
+            navigationCurrentYear.addEventListener('click', stopEvent);
+            navigationCurrentYear.addEventListener('change', yearChanged);
         }
 
-        self.addEventListener(self.element, getOpenEvent(), open, false);
-        self.addEventListener(calendarContainer, 'click', calendarClick, false);
+        self.element.addEventListener(getOpenEvent(), open);
+        calendarContainer.addEventListener('click', calendarClick);
     };
 
     open = function () {
-        self.addEventListener(document, 'click', documentClick, false);
-        self.addClass(wrapperElement, 'open');
+        document.addEventListener('click', documentClick);
+        wrapperElement.classList.add('open');
     };
 
     close = function () {
-        self.removeEventListener(document, 'click', documentClick, false);
-        self.removeClass(wrapperElement, 'open');
+        document.removeEventListener('click', documentClick);
+        wrapperElement.classList.remove('open');
     };
 
     destroy = function () {
         var parent,
             element;
 
-        self.removeEventListener(document, 'click', documentClick, false);
-        self.removeEventListener(self.element, getOpenEvent(), open, false);
+        document.removeEventListener('click', documentClick);
+        self.element.removeEventListener(getOpenEvent(), open);
 
         parent = self.element.parentNode;
         parent.removeChild(calendarContainer);
@@ -656,17 +656,4 @@ datepickr.init = function (element, instanceConfig) {
     init();
 
     return self;
-};
-
-datepickr.init.prototype = {
-    hasClass: function (element, className) { return element.classList.contains(className); },
-    addClass: function (element, className) { element.classList.add(className); },
-    removeClass: function (element, className) { element.classList.remove(className); },
-    querySelectorAll: document.querySelectorAll.bind(document),
-    addEventListener: function (element, type, listener, useCapture) {
-        element.addEventListener(type, listener, useCapture);
-    },
-    removeEventListener: function (element, type, listener, useCapture) {
-        element.removeEventListener(type, listener, useCapture);
-    },
 };
