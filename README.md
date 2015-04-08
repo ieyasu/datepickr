@@ -1,16 +1,18 @@
 ## datepickr
 
-A simple JavaScript date picker
+A simple JavaScript date picker, with changes by [Matt Bishop](https://github.com/ieyasu/datepickr).
 
 Sample implementations: http://joshsalverda.github.io/datepickr
 
-### Introduction
+Major changes:
 
-A simple, powerful, lightweight (only 6KB minified, 8KB including CSS), feature-packed date picker with no external dependencies.
+- Month and year drop-down config options, compatible with JQuery UI's [Datepicker widget](http://api.jqueryui.com/datepicker/)
+- Lifted date calculations into DPDate class, with units tests for same
+- Date formatting is now strftime()-compatible instead of PHP-like
+- Removed browser compatibility shims
 
-A lot has changed since the last version, hopefully for the better. Many new features and some bug fixes.
 
-### Details
+### Quick Start
 
 The simplest method to get up and running:
 
@@ -18,9 +20,7 @@ The simplest method to get up and running:
 datepickr('#inputElementId');
 ```
 
-Obviously replace 'inputElementId' with the actual id of the input element you will be using.
-
-What's new is that you can pass in any selector that is supported by [querySelectorAll](https://developer.mozilla.org/en/docs/Web/API/Document.querySelectorAll) (by default, more on this below):
+Replace 'inputElementId' with the id of the input element you will be using.  You can pass in any selector that is supported by [querySelectorAll](https://developer.mozilla.org/en/docs/Web/API/Document.querySelectorAll).
 
 ```
 datepickr('#some .complex [selector]');
@@ -32,81 +32,38 @@ You can also pass in a node directly:
 datepickr(document.getElementById('myId'));
 ```
 
-##### Misc.
+
+### Miscellaneous
 
 If your input has a value attribute on page load, or anytime before the datepickr instance is created, then datepickr will use that date as the default selected one. As long as Date.parse can read the value.
 
-For February, the datepickr code automatically handles checking for a leap year. This may not be ideal for localization so it may change in the future. I will need to investigate this further.
+DPDate handles leap years according to the [algorithm](http://en.wikipedia.org/wiki/Leap_year#Algorithm) given by Wikipedia for the Gregorian Calendar.
 
 datepickr is minified using the Google Closure Compiler.
 
+
 ### Browser Support
 
-The out-of-the-box browser support is every browser except for IE9 and lower.
+Only recent browsers are supported.
 
-WHAT! BUT MY CALENDERZ NEED TO WORK ON IE6!
-
-Whoa, whoa, hold on. So, IE6 might be stretching it a bit (maybe, I haven't tested it), but you could get datepickr to work on IE7 and up. How, you ask...? (continued in next section)
-
-### Modifying datepickr methods
-
-If you don't care about supporting older browsers you can skip this section.
-
-I've tried to make it as easy as possible to modify some of the base methods to support older browsers, if necessary:
-
-| Method | Description | Parameters |
-| ------------- | ----------- | ------------- |
-| hasClass | Whether an element contains a class or not (should return a boolean) | element, className |
-| addClass | Adds a class to an element | element, className |
-| removeClass | Removes a class from an element | element, className |
-| forEach | Iterate over an array | items, callback |
-| querySelectorAll | Should return an array of elements that were matched by the selector | selector |
-| isArray | Is this thing an array? | object |
-| addEventListener | Adds an event listener to an element | element, type, listener, useCapture |
-| removeEventListener | Removes an event listener | element, type, listener, useCapture |
-
-To do this you will need to do some JavaScript magic, for example:
-
-```
-<script>
-    datepickr.prototype.addClass = function (element, className) { element.className += ' ' + className; };
-    datepickr('#yourId');
-</script>
-```
-
-That was easy. Of course implementing a proper shim might be better, but the above would work in all browsers.
-
-This can be done for all of the methods listed above.
-
-For example, if you wanted to use jQuery to select the elements for some reason:
-
-```
-<script>
-    datepickr.prototype.querySelectorAll = jQuery;
-    datepickr('.some #crazy [selector]');
-</script>
-```
-
-If you're not sure what's going on above, that's fine, but then I would recommend getting some help with the implementation. It could get quite complex.
 
 ### Localization
 
-Datepickr supports localizing text in a similar way to modifying the methods (above).
+You can localize Datepickr by changing properties of the DPDate class.
 
-| Property | Type | Default | Description |
-| ------------- | ----------- | ------------- | ------------- |
-| l10n.weekdays.shorthand | array | ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] | The shortened version of each weekday, starting with Sunday |
-| l10n.weekdays.longhand | array | ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] | The long version of each weekday, starting with Sunday |
-| l10n.months.shorthand | array | ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] | Shortened version of each month, starting with January |
-| l10n.months.longhand | array | ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] | Long version of each month, starting with January |
-| l10n.daysInMonth | array | [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] | How many days in each month, starting with January |
-| l10n.firstDayOfWeek | integer | 0 | Start the calendar on a different weekday (0 = Sunday, 1 = Monday, 2 = Tuesday, etc.) |
+| DPDate Property | Description | Default |
+| --------------- |------------ | ------------- | ------------- |
+| weekdays        | Full weekday names | ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] |
+| weekdayAbbrevs  | Abbreviated weekday names | ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] |
+| months          | Full month names | ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] |
+| monthAbbrevs    | Abbreviated month names | ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] |
+| firstDayOfWeek  | 0-6, 0 = Sunday, 6 = Saturday | 0 |
 
-Weekdays in french:
+For example, changing weekday names to French:
 
 ```
 <script>
-    datepickr.prototype.l10n.weekdays.longhand = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    DPDate.weekdays = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
     datepickr('#yourId');
 </script>
 ```
@@ -115,10 +72,11 @@ Start the calendar on Monday instead of Sunday:
 
 ```
 <script>
-    datepickr.prototype.l10n.firstDayOfWeek = 1;
+    DPDate.firstDayOfWeek = 1;
     datepickr('#yourId');
 </script>
 ```
+
 
 ### Config Options
 
@@ -126,21 +84,21 @@ You can also customize each datepickr instance by passing in some extra config o
 
 | Config Option | Type | Default | Description |
 | ------------- | ----------- | ------------- | ------------- |
-| dateFormat | string | 'F j, Y' | A string of characters which are used to define how the date will be displayed in the input box. Very similar to the PHP date function, but with less options. The supported characters are defined below. |
+| dateFormat | string | '%B %e, %Y' | How the date will be displayed in the input box.  The format is given below. |
 | altInput | node | null | A reference to another input element. This can be useful if you want to show the user a readable date, but return something totally different to the server. |
-| altFormat | string | null | Exactly the same as date format, but for the altInput field |
-| minDate | Date | null | The minimum date that a user can start picking from, as a JavaScript Date object. |
-| maxDate | Date | null | The maximum date that a user can pick from, as a JavaScript Date object. |
+| altFormat | string | null | Same as dateFormat, but for the altInput field |
+| minDate | (DP)Date | null | The earliest date that a user can start picking from, as a JavaScript Date or our DPDate. |
+| maxDate | (DP)Date | null | The latest date that a user can pick from, as a JavaScript Date object or our DPDate. |
 | changeMonth | boolean | false | If true, the month displayed in the titlebar becomes a dropdown menu that lets the user jump to an arbitrary month of the current year. |
 | changeYear | boolean | false | Like changeMonth, but displays some number of years to jump to.  The range of years is controlled by yearRange. |
-| yearRange | string | 'c-10:c+10' | The range of years displayed in the year dropdown menu.  The first and last year specifications are separated by a colon.  There are three syntaxes for the year spec: relative to today ("-nn:+nn"), relative to the currently selected date ("c-nn:c+nn"), or absolute ("nnnn:nnnn").  You can mix and match these syntaxes, e.g. an absolute start year and an end year relative to today. The 'nn' is an arbitrary-length integer passed to parseInt(). |
-| shorthandCurrentMonth | boolean | false | Show the month using the shorthand version. |
+| yearRange | string | 'c-10:c+10' | The range of years displayed in the year dropdown menu. More below. |
+| abbreviateMonth | boolean | false | Use abbreviated month names. |
 
 Change the default date format:
 
 ```
 <script>
-    datepickr('.someClassName', { dateFormat: 'd-m-Y' });
+    datepickr('.someClassName', { dateFormat: '%e %B %Y' }); // 15 January 2014
 </script>
 ```
 
@@ -151,9 +109,9 @@ Specify a min and max date:
     var now = new Date().getTime();
     datepickr('#minAndMax', {
         // few days ago
-        minDate: new Date(now - 2.592e8),
+        minDate: new DPDate(now - 2.592e8),
         // few days from now
-        maxDate: new Date(now + 2.592e8)
+        maxDate: new DPDate(now + 2.592e8)
     });
 </script>
 ```
@@ -166,48 +124,42 @@ Use an alternate input and format:
 
 <script>
     datepickr('#userInput', {
-        dateFormat: 'l, F d, Y', // Wednesday, January 15, 2014
+        dateFormat: '%A, %B %e, %Y', // Wednesday, January 15, 2014
         altInput: document.getElementById('altInput'),
-        altFormat: 'm-d-Y' // 01-15-2014
+        altFormat: '%Y-%m-%d' // 2014-01-15
     });
 </script>
 ```
 
+#### yearRange
+
+The yearRange config option supports three syntaxes for year limits: relative to now, relative to the displayed month, and absolute years:
+
+- Years relative to now are integers prefixed with '+' or '-'
+- Years relative to the displayed month are integers prefixed with 'c+' or 'c-' ('c' for 'current')
+- Absolute years are integers without any prefix
+
+The limits are separated with a colon (':') as min:max.  You can mix or match the syntaxes, e.g. 'c-10:+2' will start at 10 years less than the currently display year, stopping two years from now.
+
+
 ### Date Format
 
-| Character | Description | Example |
-| ------------- | ----------- | ------------- |
-| d | Day of the month, 2 digits with leading zeros | 01 to 31 |
-| D | A textual representation of a day | Mon through Sun |
-| j | Day of the month without leading zeros | 1 to 31 |
-| l (lowercase 'L') | A full textual representation of the day of the week | Sunday through Saturday |
-| w | Numeric representation of the day of the week | 0 (for Sunday) through 6 (for Saturday) |
-| F | A full textual representation of a month | January through December |
-| m | Numeric representation of a month, with leading zero | 01 through 12 |
-| M | A short textual representation of a month | Jan through Dec |
-| n | Numeric representation of a month, without leading zeros | 1 through 12 |
-| U | The number of seconds since the Unix Epoch | 1413704993 |
-| y | A two digit representation of a year | 99 or 03 |
-| Y | A full numeric representation of a year, 4 digits | 1999 or 2003 |
+The DPDate class uses a subset of C's [strftime](http://linux.die.net/man/3/strftime) format specifiers:
 
-Note: Suffixes have been removed because JavaScript's Date.parse didn't like them.
+| Conversion Spec. | Description | Example |
+| ---------------- | ----------- | ------------- |
+| %A | Full weekday name | Monday |
+| %a | abbreviated weekday name | Mon |
+| %B | Full month name | January |
+| %b | abbreviated month name | Jan |
+| %d | day of month, 0-filled | 01-31
+| %e | day of month, space-filled | 1-31 |
+| %m | month number, 0-filled | 01-12 |
+| %s | seconds since Unix Epoch | 1413704993 |
+| %u | numeric day of week | 1-7, 1 = Monday, 7 = Sunday |
+| %w | numeric day of week | 0-6, 0 = Sunday, 6 = Saturday |
+| %Y | year with century | 1999 or 2003 |
+| %y | year without century | 99 or 03 |
+| %% | escaped '%' | |
 
-### Escaping date format characters
-
-To escape a character (if you need to use one of the reserved format characters above) use a double backslash: \\\
-
-Example:
-
-```
-dateFormat: '\\Da\\y picke\\d: Y/m/d'
-```
-
-To get something like:
-
-**Day picked: 2013/02/12**
-
-If you do not escape the characters you would end up with something like this instead:
-
-**Tuea13 picke12: 2013/02/12**
-
-Which is probably not what you want...
+A date format string consists of normal characters and conversion specifiers beginning with '%'.  Normal characters are copied to the output string while conversion specifiers are converted as above with the values in the DPDate instance.
