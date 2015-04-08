@@ -12,4 +12,4 @@ if [ -z "$path" ]; then
     exit 1
 fi
 
-echo_run "uglifyjs --compress --screw-ie8 --lint datepickr.js >datepickr.min.js"
+echo_run "uglifyjs --screw-ie8 --lint -c unsafe -m -- dpdate.js datepickr.js >min.js"
