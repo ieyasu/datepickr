@@ -62,6 +62,9 @@ datepickr.init = function(element, instanceConfig) {
         showingDate,
         selectedDate;
 
+var openTID = null, closeTID = null;
+var cancelOpen = false, cancelClose = false;
+
     if (element._datepickr) {
         element._datepickr.destroy();
     }
@@ -139,8 +142,7 @@ datepickr.init = function(element, instanceConfig) {
             return classes;
         }
 
-        var html = '<tbody><tr>';
-        for (; ; calDay.nextDay()) {
+        for (var html = '<tbody><tr>'; ; calDay.nextDay()) {
             html += '<td' + tdClasses() + '><span class="datepickr-day">';
             html += calDay.getDay() + '</span></td>';
 
@@ -152,9 +154,8 @@ datepickr.init = function(element, instanceConfig) {
                 html += "</tr><tr>";
             }
         }
-        html += '</tr></tbody>';
 
-        calendarBody.innerHTML = html;
+        calendarBody.innerHTML = html + '</tr></tbody>';
     }
 
     function updateMonthMenu() {
@@ -236,63 +237,6 @@ datepickr.init = function(element, instanceConfig) {
         buildDaysInMonth();
     }
 
-    function monthChanged() {
-        showingDate.setMonth(parseInt(navigationCurrentMonth.value));
-        rebuildCalendar();
-    }
-
-    function yearChanged() {
-        showingDate.setYear(parseInt(navigationCurrentYear.value));
-        rebuildCalendar();
-    }
-
-    function documentClick(event) {
-        var parent;
-        if (event.target !== self.element && event.target !== wrapperElement) {
-            parent = event.target.parentNode;
-            if (parent !== wrapperElement) {
-                while (parent !== wrapperElement) {
-                    parent = parent.parentNode;
-                    if (parent === null) {
-                        close();
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    function calendarClick(event) {
-        var target = event.target,
-            targetClass = target.className;
-
-        if (targetClass) {
-            if (targetClass === 'datepickr-prev-month' ||
-                targetClass === 'datepickr-next-month') {
-
-                if (targetClass === 'datepickr-prev-month') {
-                    showingDate.prevMonth();
-                } else {
-                    showingDate.nextMonth();
-                }
-
-                rebuildCalendar();
-            } else if (targetClass === 'datepickr-day' &&
-                       !target.parentNode.classList.contains('disabled')) {
-                selectedDate = showingDate.clone().setDay(
-                    parseInt(target.innerHTML, 10));
-
-                if (config.altInput) {
-                    config.altInput.value = selectedDate.strftime(config.altFormat);
-                }
-                self.element.value = selectedDate.strftime(config.dateFormat);
-
-                close();
-                buildDaysInMonth();
-            }
-        }
-    }
-
     function buildNavigation() {
         var dates = newElem('div', '-dates');
         dates.innerHTML = '<span class="datepickr-prev-month">&lt;</span>' +
@@ -323,14 +267,139 @@ datepickr.init = function(element, instanceConfig) {
         wrapperElement.appendChild(calendarContainer);
     }
 
+    function monthChanged() {
+        showingDate.setMonth(parseInt(navigationCurrentMonth.value));
+        rebuildCalendar();
+    }
+
+    function yearChanged() {
+        showingDate.setYear(parseInt(navigationCurrentYear.value));
+        rebuildCalendar();
+    }
+
+    function documentClick(event) {
+console.log('documentClick');
+        var target = event.target;
+        if (target === self.element || target === wrapperElement ||
+            target.className == 'datepickr-prev-month' ||
+            target.className == 'datepickr-next-month') return;
+
+        var parent = target.parentNode;
+        while (parent !== wrapperElement) {
+            parent = parent.parentNode;
+            if (parent === null) {
+console.log('    close - docClick');
+                // XXX need to cancel open?
+                close();
+                break;
+            }
+        }
+    }
+
+    function calendarClick(event) {
+console.log('calendarClick');
+        var target = event.target, targetClass = target.className;
+
+        if (targetClass === 'datepickr-prev-month' ||
+            targetClass === 'datepickr-next-month') {
+
+            if (targetClass === 'datepickr-prev-month') {
+                showingDate.prevMonth();
+            } else {
+                showingDate.nextMonth();
+            }
+            rebuildCalendar();
+            // XXX cancelClose = true (if input#blur)
+            cancelClose = true;
+console.log('prev/next month clicked, close canceling');
+        } else if (targetClass === 'datepickr-day' &&
+                   !target.parentNode.classList.contains('disabled')) {
+            selectedDate = showingDate.clone().setDay(
+                parseInt(target.innerHTML, 10));
+
+            if (config.altInput) {
+                config.altInput.value = selectedDate.strftime(config.altFormat);
+            }
+            self.element.value = selectedDate.strftime(config.dateFormat);
+
+            // delay until input#focus has fired
+            close();
+            // XXX need to temporarily suppress opening
+            cancelOpen = true;
+console.log('day clicked, canceling open');
+
+            buildDaysInMonth(); // XXX why here?!
+console.log('selected a day and cal should be closed');
+        } else {
+            // stops year/month drop-downs from closing prematurely
+            event.preventDefault();
+
+            // XXX cancel close?
+        }
+    }
+
+    function menuFocused() {
+console.log('menu focused');
+        // XXX cancel close from input:blur, not others(?)
+        cancelClose = true;
+    }
+
+    function inputFocus() {
+console.log('input focused');
+        open();
+    }
+
+    function inputBlur() {
+console.log('input blur');
+        close();
+    }
+
+    function elementClick() {
+console.log('input click');
+        open(); // XXX or do we need to set a timer?
+    }
+
     function open() {
-        document.addEventListener('click', documentClick);
-        wrapperElement.classList.add('open');
+console.log('request open');
+        if (typeof openTID === "number") {
+            console.log("  already have open timeout going");
+            return;
+        }
+
+        openTID = window.setTimeout(function() {
+            if (cancelOpen) {
+                console.log('    open cancelled');
+                cancelOpen = false;
+            } else {
+console.log('actual open');
+                // XXX recreate calendar bits here?
+                document.addEventListener('click', documentClick);
+                wrapperElement.classList.add('open');
+            }
+            openTID = null;
+        }, 100);
+console.log('created open timeout:', openTID);
     }
 
     function close() {
-        document.removeEventListener('click', documentClick);
-        wrapperElement.classList.remove('open');
+console.log('request close');
+        if (typeof closeTID === "number") {
+            console.log("  already have close timeout going");
+            return;
+        }
+
+        closeTID = window.setTimeout(function() {
+            if (cancelClose) {
+                console.log('  close cancelled');
+                cancelClose = false;
+            } else {
+console.log('actual close');
+                document.removeEventListener('click', documentClick);
+                wrapperElement.classList.remove('open');
+            }
+            closeTID = null;
+        }, 100);
+console.log('created close timeout:',closeTID);
     }
 
     function getOpenEvent() {
@@ -338,32 +407,38 @@ datepickr.init = function(element, instanceConfig) {
     }
 
     function bind() { // only called once below
-        function stopEvent(ev) { ev.preventDefault(); };
-
         if (config.changeMonth) {
-            navigationCurrentMonth.addEventListener('click', stopEvent);
             navigationCurrentMonth.addEventListener('change', monthChanged);
+            navigationCurrentMonth.addEventListener('focus', menuFocused);
         }
 
         if (config.changeYear) {
-            navigationCurrentYear.addEventListener('click', stopEvent);
             navigationCurrentYear.addEventListener('change', yearChanged);
+            navigationCurrentYear.addEventListener('focus', menuFocused);
         }
 
-        self.element.addEventListener(getOpenEvent(), open);
+        if (self.element.nodeName === 'INPUT') {
+            self.element.addEventListener('focus', inputFocus);
+            self.element.addEventListener('blur', inputBlur);
+        }
+        self.element.addEventListener('click', elementClick);
+
+        // XXX doesn't seem to be triggered anymore
+console.log(calendarContainer);
         calendarContainer.addEventListener('click', calendarClick);
     }
 
     self.destroy = function() { // export for us in datepickr()
-        var parent,
-            element;
-
         document.removeEventListener('click', documentClick);
-        self.element.removeEventListener(getOpenEvent(), open);
+        if (self.element.nodeName === 'INPUT') {
+            self.element.removeEventListener('focus', inputFocus);
+            self.element.removeEventListener('blur', inputBlur);
+        }
+        self.element.removeEventListener('click', elementClick);
 
-        parent = self.element.parentNode;
+        var parent = self.element.parentNode;
         parent.removeChild(calendarContainer);
-        element = parent.removeChild(self.element);
+        var element = parent.removeChild(self.element);
         parent.parentNode.replaceChild(element, parent);
     }
 
