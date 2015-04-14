@@ -62,9 +62,6 @@ datepickr.init = function(element, instanceConfig) {
         showingDate,
         selectedDate;
 
-var openTID = null, closeTID = null;
-var cancelOpen = false, cancelClose = false;
-
     if (element._datepickr) {
         element._datepickr.destroy();
     }
@@ -278,8 +275,12 @@ var cancelOpen = false, cancelClose = false;
     }
 
     function documentClick(event) {
-console.log('documentClick');
         var target = event.target, targetClass = target.className;
+
+        event.preventDefault(); // prevents elementClicked from firing
+        // XXX we want to do this every time we handle an event here.
+        // XXX I'm pretty sure there's no case where we don't want to do that
+        // XXX maybe if
 
         if (targetClass === 'datepickr-prev-month' ||
             targetClass === 'datepickr-next-month') {
@@ -290,8 +291,6 @@ console.log('documentClick');
                 showingDate.nextMonth();
             }
             rebuildCalendar();
-            cancelClose = true; // if input#blur(?)
-console.log('prev/next month clicked, close canceling');
             return;
         } else if (targetClass === 'datepickr-day' &&
                    !target.parentNode.classList.contains('disabled')) {
@@ -303,14 +302,9 @@ console.log('prev/next month clicked, close canceling');
             }
             self.element.value = selectedDate.strftime(config.dateFormat);
 
-            // delay until input#focus has fired
             close();
-            // XXX need to temporarily suppress opening
-            cancelOpen = true;
-console.log('day clicked, canceling open');
 
             buildDaysInMonth(); // XXX why here?!
-console.log('selected a day and cal should be closed');
             return;
         }
 
@@ -319,112 +313,65 @@ console.log('selected a day and cal should be closed');
         while (parent !== wrapperElement) {
             parent = parent.parentNode;
             if (parent === null) {
-console.log('    close - docClick');
-                // XXX need to cancel open?
                 close();
                 break;
             }
         }
-
-        // stops year/month drop-downs from closing prematurely
-        event.preventDefault();
-
-        // XXX cancel close?
     }
 
-    function menuFocused() {
-console.log('menu focused');
-        // XXX cancel close from input:blur, not others(?)
-        cancelClose = true;
-    }
-
-    function inputFocus() {
-console.log('input focused');
-        open();
-    }
-
-    function inputBlur() {
-console.log('input blur');
-        close();
-    }
-
-    function elementClick() {
-console.log('input click');
-        open(); // XXX or do we need to set a timer?
-    }
+    var calendarIsOpen = null;
 
     function open() {
-console.log('request open');
-        if (typeof openTID === "number") {
-            console.log("  already have open timeout going");
-            return;
-        }
+        if (!calendarIsOpen) {
+            calendarIsOpen = true;
 
-        openTID = window.setTimeout(function() {
-            if (cancelOpen) {
-                console.log('    open cancelled');
-                cancelOpen = false;
-            } else {
-console.log('actual open');
-                // XXX recreate calendar bits here?
-                document.addEventListener('click', documentClick);
-                wrapperElement.classList.add('open');
-            }
-            openTID = null;
-        }, 100);
-console.log('created open timeout:', openTID);
+            document.addEventListener('click', documentClick);
+            wrapperElement.classList.add('open');
+
+            // XXX recreate calendar bits here?
+        }
     }
 
     function close() {
-console.log('request close');
-        if (typeof closeTID === "number") {
-            console.log("  already have close timeout going");
-            return;
+        if (!calendarIsOpen) {
+            console.log("calendar is not open ?!");
         }
 
-        closeTID = window.setTimeout(function() {
-            if (cancelClose) {
-                console.log('  close cancelled');
-                cancelClose = false;
-            } else {
-console.log('actual close');
-                document.removeEventListener('click', documentClick);
-                wrapperElement.classList.remove('open');
-            }
-            closeTID = null;
-        }, 100);
-console.log('created close timeout:',closeTID);
-    }
+        // XXX yes, we do need this!
+        calendarIsOpen = false;
 
-    function getOpenEvent() {
-        return (self.element.nodeName === 'INPUT') ? 'focus' : 'click';
+        document.removeEventListener('click', documentClick);
+        wrapperElement.classList.remove('open');
     }
 
     function bind() { // only called once below
         if (config.changeMonth) {
             navigationCurrentMonth.addEventListener('change', monthChanged);
-            navigationCurrentMonth.addEventListener('focus', menuFocused);
         }
-
         if (config.changeYear) {
             navigationCurrentYear.addEventListener('change', yearChanged);
-            navigationCurrentYear.addEventListener('focus', menuFocused);
         }
 
+        self.element.addEventListener('click', open);
+
         if (self.element.nodeName === 'INPUT') {
-            self.element.addEventListener('focus', inputFocus);
-            self.element.addEventListener('blur', inputBlur);
+            self.element.addEventListener('focus', open);
+
+            // Esc button -> close dialog
+
+            // element#blur->close causes tons of trouble
+            // if we want to close calendar after focusing another element,
+            // handle it by closing another calendar instance before opening
+            // the calendar from another instance
         }
-        self.element.addEventListener('click', elementClick);
     }
 
     self.destroy = function() { // export for us in datepickr()
         document.removeEventListener('click', documentClick);
         if (self.element.nodeName === 'INPUT') {
-            self.element.removeEventListener('focus', inputFocus);
-            self.element.removeEventListener('blur', inputBlur);
+            self.element.removeEventListener('focus', open);
         }
-        self.element.removeEventListener('click', elementClick);
+        self.element.removeEventListener('click', open);
 
         var parent = self.element.parentNode;
         parent.removeChild(calendarContainer);
