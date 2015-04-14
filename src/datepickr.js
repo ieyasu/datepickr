@@ -53,14 +53,14 @@ datepickr.init = function(element, instanceConfig) {
             abbreviateMonth: false
         },
         config,
-        calendarContainer,
+        container,
         calendarBody,
-        navigationCurrentMonth,
-        navigationCurrentYear,
+        navCurrentMonth,
+        navCurrentYear,
         showingDate,
         selectedDate;
 
-    if (element._datepickr) {
+    if (element._datepickr) { // destroy old calendar if exists
         element._datepickr.destroy();
     }
     element._datepickr = this;
@@ -88,22 +88,6 @@ datepickr.init = function(element, instanceConfig) {
 
     config.monthNames = config.abbreviateMonth ?
         DPDate.monthAbbrevs : DPDate.months;
-
-    (function() {
-        var tagName;
-
-        tagName = config.changeMonth ? 'select' : 'span';
-        navigationCurrentMonth = newElem(tagName, '-current-month');
-
-        tagName = config.changeYear ? 'select' : 'span';
-        navigationCurrentYear = newElem(tagName, '-current-year');
-    })();
-
-    function newElem(tagName, cls) {
-        var e = document.createElement(tagName);
-        if (cls) e.className = 'datepickr' + cls;
-        return e;
-    }
 
     // each day in the month, and overlap
     function buildDaysInMonth() {
@@ -209,11 +193,11 @@ datepickr.init = function(element, instanceConfig) {
         return html;
     }
 
-    function updateNavigationCurrentDate() {
-        navigationCurrentMonth.innerHTML = config.changeMonth ?
+    function updateNavCurrentDate() {
+        navCurrentMonth.innerHTML = config.changeMonth ?
             updateMonthMenu() : config.monthNames[showingDate.getMonth()];
 
-        navigationCurrentYear.innerHTML = config.changeYear ?
+        navCurrentYear.innerHTML = config.changeYear ?
             updateYearMenu() : showingDate.getYear();
 
         // XXX disable next/prev month buttons if outside min/max
@@ -227,47 +211,59 @@ datepickr.init = function(element, instanceConfig) {
             showingDate = config.maxDate.clone();
         }
 
-        updateNavigationCurrentDate();
+        updateNavCurrentDate();
         buildDaysInMonth();
     }
 
-    function buildCoreUI() {
-        calendarContainer = newElem('div', '-calendar');
+    function buildUISkel() {
+        function newElem(tagName, cls) {
+            var e = document.createElement(tagName);
+            if (cls) e.className = 'datepickr' + cls;
+            return e;
+        }
+
+        container = newElem('div', '-calendar');
 
         // current date display/navigation
         var dates = newElem('div', '-dates');
         dates.innerHTML = '<span class="datepickr-prev-month">&lt;</span>' +
             '<span class="datepickr-next-month">&gt;</span>';
-        dates.appendChild(navigationCurrentMonth);
-        dates.appendChild(navigationCurrentYear);
-        calendarContainer.appendChild(dates);
 
-        var calendar = newElem('table');
-        calendar.innerHTML = '<thead><tr><th>' + DPDate.weekdaysInCalendarOrder().join('</th><th>') + '</th></tr></thead>';
+        var tagName = config.changeMonth ? 'select' : 'span';
+        navCurrentMonth = newElem(tagName, '-current-month');
+
+        tagName = config.changeYear ? 'select' : 'span';
+        navCurrentYear = newElem(tagName, '-current-year');
+
+        dates.appendChild(navCurrentMonth);
+        dates.appendChild(navCurrentYear);
+        container.appendChild(dates);
+
+        var table = newElem('table');
+        table.innerHTML = '<thead><tr><th>' + DPDate.weekdaysInCalendarOrder().join('</th><th>') + '</th></tr></thead>';
 
         // XXX needed as var to set innerHTML
         calendarBody = newElem('tbody');
-        calendar.appendChild(calendarBody);
+        table.appendChild(calendarBody);
 
-        calendarContainer.appendChild(calendar);
+        container.appendChild(table);
 
-        var elemParent = self.element.parentNode;
-        elemParent.appendChild(calendarContainer);
+        element.parentNode.appendChild(container);
 
         rebuildCalendar(); // XXX really here?
     }
 
     function monthChanged() {
-        showingDate.setMonth(parseInt(navigationCurrentMonth.value));
+        showingDate.setMonth(parseInt(navCurrentMonth.value));
         rebuildCalendar();
     }
 
     function yearChanged() {
-        showingDate.setYear(parseInt(navigationCurrentYear.value));
+        showingDate.setYear(parseInt(navCurrentYear.value));
         rebuildCalendar();
     }
 
-    function documentClick(event) {
+    function anyClick(event) {
         var target = event.target, targetClass = target.className;
 
         event.preventDefault(); // prevents elementClicked from firing
@@ -275,16 +271,12 @@ datepickr.init = function(element, instanceConfig) {
         // XXX I'm pretty sure there's no case where we don't want to do that
         // XXX maybe if
 
-        if (targetClass === 'datepickr-prev-month' ||
-            targetClass === 'datepickr-next-month') {
-
-            if (targetClass === 'datepickr-prev-month') {
-                showingDate.prevMonth();
-            } else {
-                showingDate.nextMonth();
-            }
+        if (targetClass === 'datepickr-prev-month') {
+            showingDate.prevMonth();
             rebuildCalendar();
-            return;
+        } else if (targetClass === 'datepickr-next-month') {
+            showingDate.nextMonth();
+            rebuildCalendar();
         } else if (targetClass === 'datepickr-day' &&
                    !target.parentNode.classList.contains('disabled')) {
             selectedDate = showingDate.clone().setDay(
@@ -293,23 +285,22 @@ datepickr.init = function(element, instanceConfig) {
             if (config.altInput) {
                 config.altInput.value = selectedDate.strftime(config.altFormat);
             }
-            self.element.value = selectedDate.strftime(config.dateFormat);
+            element.value = selectedDate.strftime(config.dateFormat);
 
             close();
 
             buildDaysInMonth(); // XXX why here?!
-            return;
-        }
-
-        // see if user clicked outside calendar
-        var parent = target; // .parentNode;
-        while (parent !== self.element && parent !== calendarContainer) {
-            parent = parent.parentNode;
-            if (parent === null) {
-                close();
-                break;
+        } else { // see if user clicked outside calendar
+            while (target !== element && target !== container) {
+                target = target.parentNode;
+                if (target === null) {
+                    close();
+                    break; // XXX or return
+                }
             }
         }
+
+        // XXX what common action could we do here?
     }
 
     var calendarIsOpen = null; // XXX still need?
@@ -318,15 +309,15 @@ datepickr.init = function(element, instanceConfig) {
         if (!calendarIsOpen) {
             calendarIsOpen = true;
 
-            document.addEventListener('click', documentClick);
-            calendarContainer.classList.add('open');
+            document.addEventListener('click', anyClick);
+            container.classList.add('open');
 
             // position calendar relative to element (with focus outline)
             // XXX would be nice if we didn't have to assume outline size
-            var off = (self.element.nodeName === 'INPUT') ? 3 : 0;
-            var br = self.element.getBoundingClientRect();
-            calendarContainer.style.left = (br.left - off) + "px";
-            calendarContainer.style.top = (br.bottom + off) + "px";
+            var off = (element.nodeName === 'INPUT') ? 3 : 0;
+            var br = element.getBoundingClientRect();
+            container.style.left = (br.left - off) + "px";
+            container.style.top = (br.bottom + off) + "px";
 
             // XXX recreate calendar bits here?
         }
@@ -337,27 +328,23 @@ datepickr.init = function(element, instanceConfig) {
             console.log("calendar is not open ?!");
         }
 
-        // XXX yes, we do need this!
+        // XXX yes, we do need this! -- still?
         calendarIsOpen = false;
 
-        document.removeEventListener('click', documentClick);
-        calendarContainer.classList.remove('open');
+        document.removeEventListener('click', anyClick);
+        container.classList.remove('open');
     }
 
     function events(what) {
         what += 'EventListener';
-        function whater(elem, name, cb) { elem[what].call(elem, name, cb) }
+        function caller(elem, name, cb) { elem[what].call(elem, name, cb) }
 
-        if (config.changeMonth) {
-            whater(navigationCurrentMonth, 'change', monthChanged);
-        }
-        if (config.changeYear) {
-            whater(navigationCurrentYear, 'change', yearChanged);
-        }
+        if (config.changeMonth) caller(navCurrentMonth, 'change', monthChanged);
+        if (config.changeYear) caller(navCurrentYear, 'change', yearChanged);
 
-        whater(self.element, 'click', open);
-        if (self.element.nodeName === 'INPUT') {
-            whater(self.element, 'focus', open);
+        caller(element, 'click', open);
+        if (element.nodeName === 'INPUT') {
+            caller(element, 'focus', open);
 
             // Esc button -> close dialog
 
@@ -370,17 +357,15 @@ datepickr.init = function(element, instanceConfig) {
 
     self.destroy = function() { // export for us in datepickr()
         events('remove');
-        calendarContainer.parentNode.removeChild(calendarContainer);
-        // XXX may need to null out some vars so it can GC
+        container.parentNode.removeChild(container);
+        // XXX may need to null out some vars for GC
     }
 
     function init() {
         var parsedDate;
 
-        self.element = element;
-
-        if (self.element.value) {
-            parsedDate = Date.parse(self.element.value);
+        if (element.value) {
+            parsedDate = Date.parse(element.value);
         }
 
         if (parsedDate && !isNaN(parsedDate)) {
@@ -390,7 +375,7 @@ datepickr.init = function(element, instanceConfig) {
             showingDate = new DPDate();
         }
 
-        buildCoreUI();
+        buildUISkel();
         events('add');
     }
     init();
