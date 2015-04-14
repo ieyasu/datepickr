@@ -158,6 +158,10 @@ QUnit.test("isSameDay", function(assert) {
     d = new DPDate(2013, 7, 9);
     e = new DPDate(2014, 5, 6);
     assert.ok(!d.isSameDay(e));
+
+    d = new DPDate();
+    e = new DPDate(d.date.getTime() - 5467);
+    assert.ok(d.isSameDay(e), "ignores anything finer than day");
 });
 
 QUnit.test("isLeapYear", function(assert) {

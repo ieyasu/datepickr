@@ -99,7 +99,10 @@ DPDate.prototype = {
      * year, month and day.
      */
     isSameDay: function(otherDate) {
-        return this.compare(otherDate) === 0;
+        return otherDate &&
+            (this.getYear() === otherDate.getYear()) &&
+            (this.getMonth() === otherDate.getMonth()) &&
+            (this.getDay() === otherDate.getDay());
     },
 
     isLeapYear: function() {
