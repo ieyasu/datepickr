@@ -344,18 +344,20 @@ datepickr.init = function(element, instanceConfig) {
         calendarContainer.classList.remove('open');
     }
 
-    function bind() { // only called once below
+    function events(what) {
+        what += 'EventListener';
+        function whater(elem, name, cb) { elem[what].call(elem, name, cb) }
+
         if (config.changeMonth) {
-            navigationCurrentMonth.addEventListener('change', monthChanged);
+            whater(navigationCurrentMonth, 'change', monthChanged);
         }
         if (config.changeYear) {
-            navigationCurrentYear.addEventListener('change', yearChanged);
+            whater(navigationCurrentYear, 'change', yearChanged);
         }
 
-        self.element.addEventListener('click', open);
-
+        whater(self.element, 'click', open);
         if (self.element.nodeName === 'INPUT') {
-            self.element.addEventListener('focus', open);
+            whater(self.element, 'focus', open);
 
             // Esc button -> close dialog
 
@@ -367,14 +369,10 @@ datepickr.init = function(element, instanceConfig) {
     }
 
     self.destroy = function() { // export for us in datepickr()
-        document.removeEventListener('click', documentClick);
-        if (self.element.nodeName === 'INPUT') {
-            self.element.removeEventListener('focus', open);
-        }
-        self.element.removeEventListener('click', open);
-
-        var parent = self.element.parentNode;
-        parent.removeChild(calendarContainer); // XXX might get calendarContainer another way and not need variable
+        events('remove');
+        calendarContainer.parentNode.removeChild(calendarContainer);
+        // XXX may need to null out some vars so it can GC
+    }
 
     function init() {
         var parsedDate;
@@ -393,7 +391,7 @@ datepickr.init = function(element, instanceConfig) {
         }
 
         buildCoreUI();
-        bind();
+        events('add');
     }
     init();
 
