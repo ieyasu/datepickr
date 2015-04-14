@@ -279,25 +279,6 @@ var cancelOpen = false, cancelClose = false;
 
     function documentClick(event) {
 console.log('documentClick');
-        var target = event.target;
-        if (target === self.element || target === wrapperElement ||
-            target.className == 'datepickr-prev-month' ||
-            target.className == 'datepickr-next-month') return;
-
-        var parent = target.parentNode;
-        while (parent !== wrapperElement) {
-            parent = parent.parentNode;
-            if (parent === null) {
-console.log('    close - docClick');
-                // XXX need to cancel open?
-                close();
-                break;
-            }
-        }
-    }
-
-    function calendarClick(event) {
-console.log('calendarClick');
         var target = event.target, targetClass = target.className;
 
         if (targetClass === 'datepickr-prev-month' ||
@@ -309,9 +290,9 @@ console.log('calendarClick');
                 showingDate.nextMonth();
             }
             rebuildCalendar();
-            // XXX cancelClose = true (if input#blur)
-            cancelClose = true;
+            cancelClose = true; // if input#blur(?)
 console.log('prev/next month clicked, close canceling');
+            return;
         } else if (targetClass === 'datepickr-day' &&
                    !target.parentNode.classList.contains('disabled')) {
             selectedDate = showingDate.clone().setDay(
@@ -330,12 +311,25 @@ console.log('day clicked, canceling open');
 
             buildDaysInMonth(); // XXX why here?!
 console.log('selected a day and cal should be closed');
-        } else {
-            // stops year/month drop-downs from closing prematurely
-            event.preventDefault();
-
-            // XXX cancel close?
+            return;
         }
+
+        // see if user clicked outside calendar and wrapper
+        var parent = target.parentNode;
+        while (parent !== wrapperElement) {
+            parent = parent.parentNode;
+            if (parent === null) {
+console.log('    close - docClick');
+                // XXX need to cancel open?
+                close();
+                break;
+            }
+        }
+
+        // stops year/month drop-downs from closing prematurely
+        event.preventDefault();
+
+        // XXX cancel close?
     }
 
     function menuFocused() {
@@ -422,10 +416,6 @@ console.log('created close timeout:',closeTID);
             self.element.addEventListener('blur', inputBlur);
         }
         self.element.addEventListener('click', elementClick);
-
-        // XXX doesn't seem to be triggered anymore
-console.log(calendarContainer);
-        calendarContainer.addEventListener('click', calendarClick);
     }
 
     self.destroy = function() { // export for us in datepickr()
