@@ -53,12 +53,10 @@ datepickr.init = function(element, instanceConfig) {
             abbreviateMonth: false
         },
         config,
-        calendarContainer = newElem('div', '-calendar'),
-        calendar = newElem('table'),
-        calendarBody = newElem('tbody'),
+        calendarContainer,
+        calendarBody,
         navigationCurrentMonth,
         navigationCurrentYear,
-        wrapperElement,
         showingDate,
         selectedDate;
 
@@ -139,20 +137,18 @@ datepickr.init = function(element, instanceConfig) {
             return classes;
         }
 
-        for (var html = '<tbody><tr>'; ; calDay.nextDay()) {
+        for (var html = '<tr>'; ; calDay.nextDay()) {
             html += '<td' + tdClasses() + '><span class="datepickr-day">';
             html += calDay.getDay() + '</span></td>';
 
-            if (calDay.isSameDay(calLast)) {
-                break;
-            }
+            if (calDay.isSameDay(calLast)) break;
 
             if (calDay.getDayOfWeek() == DPDate.lastDayOfWeek()) {
                 html += "</tr><tr>";
             }
         }
 
-        calendarBody.innerHTML = html + '</tr></tbody>';
+        calendarBody.innerHTML = html + '</tr>';
     }
 
     function updateMonthMenu() {
@@ -223,6 +219,7 @@ datepickr.init = function(element, instanceConfig) {
         // XXX disable next/prev month buttons if outside min/max
     }
 
+    // clamp showingDate to min/max then fix nav & days
     function rebuildCalendar() {
         if (showingDate.compare(config.minDate) < 0) {
             showingDate = config.minDate.clone();
@@ -234,34 +231,30 @@ datepickr.init = function(element, instanceConfig) {
         buildDaysInMonth();
     }
 
-    function buildNavigation() {
+    function buildCoreUI() {
+        calendarContainer = newElem('div', '-calendar');
+
+        // current date display/navigation
         var dates = newElem('div', '-dates');
         dates.innerHTML = '<span class="datepickr-prev-month">&lt;</span>' +
             '<span class="datepickr-next-month">&gt;</span>';
-
         dates.appendChild(navigationCurrentMonth);
         dates.appendChild(navigationCurrentYear);
         calendarContainer.appendChild(dates);
-    }
 
-    // Sun/Mon Tue ... Fri Sat/Sun column headers
-    function buildDaysOfWeek() {
-        var weekdayContainer = newElem('thead'),
-            dayNames = DPDate.weekdaysInCalendarOrder();
+        var calendar = newElem('table');
+        calendar.innerHTML = '<thead><tr><th>' + DPDate.weekdaysInCalendarOrder().join('</th><th>') + '</th></tr></thead>';
 
-        weekdayContainer.innerHTML = '<tr><th>' + dayNames.join('</th><th>') + '</th></tr>';
-        calendar.appendChild(weekdayContainer);
-    }
-
-    function buildCalendar() {
-        buildNavigation();
-        buildDaysOfWeek();
-        rebuildCalendar();
-
+        // XXX needed as var to set innerHTML
+        calendarBody = newElem('tbody');
         calendar.appendChild(calendarBody);
+
         calendarContainer.appendChild(calendar);
 
-        wrapperElement.appendChild(calendarContainer);
+        var elemParent = self.element.parentNode;
+        elemParent.appendChild(calendarContainer);
+
+        rebuildCalendar(); // XXX really here?
     }
 
     function monthChanged() {
@@ -308,9 +301,9 @@ datepickr.init = function(element, instanceConfig) {
             return;
         }
 
-        // see if user clicked outside calendar and wrapper
-        var parent = target.parentNode;
-        while (parent !== wrapperElement) {
+        // see if user clicked outside calendar
+        var parent = target; // .parentNode;
+        while (parent !== self.element && parent !== calendarContainer) {
             parent = parent.parentNode;
             if (parent === null) {
                 close();
@@ -319,14 +312,21 @@ datepickr.init = function(element, instanceConfig) {
         }
     }
 
-    var calendarIsOpen = null;
+    var calendarIsOpen = null; // XXX still need?
 
     function open() {
         if (!calendarIsOpen) {
             calendarIsOpen = true;
 
             document.addEventListener('click', documentClick);
-            wrapperElement.classList.add('open');
+            calendarContainer.classList.add('open');
+
+            // position calendar relative to element (with focus outline)
+            // XXX would be nice if we didn't have to assume outline size
+            var off = (self.element.nodeName === 'INPUT') ? 3 : 0;
+            var br = self.element.getBoundingClientRect();
+            calendarContainer.style.left = (br.left - off) + "px";
+            calendarContainer.style.top = (br.bottom + off) + "px";
 
             // XXX recreate calendar bits here?
         }
@@ -341,7 +341,7 @@ datepickr.init = function(element, instanceConfig) {
         calendarIsOpen = false;
 
         document.removeEventListener('click', documentClick);
-        wrapperElement.classList.remove('open');
+        calendarContainer.classList.remove('open');
     }
 
     function bind() { // only called once below
@@ -374,16 +374,7 @@ datepickr.init = function(element, instanceConfig) {
         self.element.removeEventListener('click', open);
 
         var parent = self.element.parentNode;
-        parent.removeChild(calendarContainer);
-        var element = parent.removeChild(self.element);
-        parent.parentNode.replaceChild(element, parent);
-    }
-
-    function wrap() { // only called once below
-        wrapperElement = newElem('div', '-wrapper');
-        self.element.parentNode.insertBefore(wrapperElement, self.element);
-        wrapperElement.appendChild(self.element);
-    }
+        parent.removeChild(calendarContainer); // XXX might get calendarContainer another way and not need variable
 
     function init() {
         var parsedDate;
@@ -401,8 +392,7 @@ datepickr.init = function(element, instanceConfig) {
             showingDate = new DPDate();
         }
 
-        wrap();
-        buildCalendar();
+        buildCoreUI();
         bind();
     }
     init();
