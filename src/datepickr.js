@@ -308,7 +308,8 @@ datepickr.init = function(element, instanceConfig) {
         }
     }
 
-    self.destroy = function() { // export for us in datepickr()
+    self.destroy = function() { // export for use in datepickr()
+        close();
         events('remove');
         container.parentNode.removeChild(container);
         // XXX may need to null out some vars for GC
