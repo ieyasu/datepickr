@@ -279,15 +279,17 @@ datepickr.init = function(element, userConfig) {
 
     function events(what) {
         what += 'EventListener';
-        function caller(elem, name, cb) { elem[what].call(elem, name, cb) }
+        function doArgsMethod(elem, name, fn) {
+            elem[what].call(elem, name, fn);
+        }
 
-        if (config.changeMonth) caller(navMonth, 'change', monthChanged);
-        if (config.changeYear) caller(navYear, 'change', yearChanged);
+        if (config.changeMonth) doArgsMethod(navMonth, 'change', monthChanged);
+        if (config.changeYear) doArgsMethod(navYear, 'change', yearChanged);
 
-        caller(element, 'click', open);
+        doArgsMethod(element, 'click', open);
         if (element.nodeName === 'INPUT') {
-            caller(element, 'focus', open);
-            caller(element, 'keypress', closeOnEsc);
+            doArgsMethod(element, 'focus', open);
+            doArgsMethod(element, 'keypress', closeOnEsc);
 
             // element#blur->close causes tons of trouble
             // if we want to close calendar after focusing another element,
