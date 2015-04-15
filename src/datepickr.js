@@ -183,7 +183,7 @@ datepickr.init = function(element, instanceConfig) {
         }
 
         updateNavCurrentDate();
-        buildDaysInMonth();
+        buildDaysInMonth(); // XXX only called here
     }
 
     function buildUISkel() {
@@ -220,8 +220,6 @@ datepickr.init = function(element, instanceConfig) {
         container.appendChild(table);
 
         element.parentNode.appendChild(container);
-
-        rebuildCalendar(); // XXX really here?
     }
 
     function monthChanged() {
@@ -259,8 +257,6 @@ datepickr.init = function(element, instanceConfig) {
             element.value = selectedDate.strftime(config.dateFormat);
 
             close();
-
-            buildDaysInMonth(); // XXX why here?!
         } else { // see if user clicked outside calendar
             while (target !== element && target !== container) {
                 target = target.parentNode;
@@ -280,9 +276,6 @@ datepickr.init = function(element, instanceConfig) {
         if (!calendarIsOpen) {
             calendarIsOpen = true;
 
-            document.addEventListener('click', anyClick);
-            container.classList.add('open');
-
             // position calendar relative to element (with focus outline)
             // XXX would be nice if we didn't have to assume outline size
             var off = (element.nodeName === 'INPUT') ? 3 : 0;
@@ -290,7 +283,10 @@ datepickr.init = function(element, instanceConfig) {
             container.style.left = (br.left - off) + "px";
             container.style.top = (br.bottom + off) + "px";
 
-            // XXX recreate calendar bits here?
+            rebuildCalendar();
+
+            document.addEventListener('click', anyClick);
+            container.classList.add('open');
         }
     }
 
