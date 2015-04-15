@@ -235,10 +235,9 @@ datepickr.init = function(element, instanceConfig) {
     function anyClick(event) {
         var target = event.target, targetClass = target.className;
 
-        event.preventDefault(); // prevents elementClicked from firing
-        // XXX we want to do this every time we handle an event here.
-        // XXX I'm pretty sure there's no case where we don't want to do that
-        // XXX maybe if
+        // prevents a snarl of events propagating to the input element, notably
+        // when clicking on date navigation or after the calendar is closed
+        event.preventDefault();
 
         if (targetClass === 'datepickr-prev-month') {
             showingDate.prevMonth();
@@ -262,42 +261,27 @@ datepickr.init = function(element, instanceConfig) {
                 target = target.parentNode;
                 if (target === null) {
                     close();
-                    break; // XXX or return
+                    break;
                 }
             }
         }
-
-        // XXX what common action could we do here?
     }
 
-    var calendarIsOpen = null; // XXX still need?
-
     function open() {
-        if (!calendarIsOpen) {
-            calendarIsOpen = true;
+        // position calendar relative to element (with focus outline)
+        // XXX would be nice if we didn't have to assume outline size
+        var off = (element.nodeName === 'INPUT') ? 3 : 0;
+        var br = element.getBoundingClientRect();
+        container.style.left = (br.left - off) + "px";
+        container.style.top = (br.bottom + off) + "px";
 
-            // position calendar relative to element (with focus outline)
-            // XXX would be nice if we didn't have to assume outline size
-            var off = (element.nodeName === 'INPUT') ? 3 : 0;
-            var br = element.getBoundingClientRect();
-            container.style.left = (br.left - off) + "px";
-            container.style.top = (br.bottom + off) + "px";
+        rebuildCalendar();
 
-            rebuildCalendar();
-
-            document.addEventListener('click', anyClick);
-            container.classList.add('open');
-        }
+        document.addEventListener('click', anyClick);
+        container.classList.add('open');
     }
 
     function close() {
-        if (!calendarIsOpen) {
-            console.log("calendar is not open ?!");
-        }
-
-        // XXX yes, we do need this! -- still?
-        calendarIsOpen = false;
-
         document.removeEventListener('click', anyClick);
         container.classList.remove('open');
     }
