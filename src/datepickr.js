@@ -13,32 +13,24 @@
 
 function datepickr(selector, config) {
     'use strict';
-    var elements,
-        createInstance,
-        instances = [],
-        i;
-
-    function createInstance(element) {
+    function mkPickr(element) {
         return new datepickr.init(element, config);
     }
 
     if (selector.nodeName) {
-        return createInstance(selector);
+        return mkPickr(selector);
     }
 
-    elements = document.querySelectorAll(selector);
+    var elements = document.querySelectorAll(selector);
+    var instances = [];
 
-    if (elements.length === 1) {
-        return createInstance(elements[0]);
+    for (var i = 0; i < elements.length; i++) {
+        instances.push(mkPickr(elements[i]));
     }
-
-    for (i = 0; i < elements.length; i++) {
-        instances.push(createInstance(elements[i]));
-    }
-    return instances;
+    return (instances.length === 1) ? instances[0] : instances;
 };
 
-datepickr.init = function(element, instanceConfig) {
+datepickr.init = function(element, userConfig) {
     'use strict';
     var self = this,
         defaultConfig = {
@@ -53,10 +45,9 @@ datepickr.init = function(element, instanceConfig) {
             abbreviateMonth: false
         },
         config = defaultConfig,
-        container,
-        calendarBody,
-        navCurrentMonth,
-        navCurrentYear,
+        container, // outermost <div> for the calender
+        calendarBody, // where days on the calendar go
+        navMonth, navYear, // <span>s or drop-down menus
         showingDate,
         selectedDate = null;
 
@@ -147,12 +138,11 @@ datepickr.init = function(element, instanceConfig) {
             showingYear = showingDate.getYear(),
             html = '';
 
-        if (config.minDate && year < config.minDate.getYear()) {
-            year = config.minDate.getYear();
-        }
-        if (config.maxDate && endYear > config.maxDate.getYear()) {
-            endYear = config.maxDate.getYear();
-        }
+        // still need to clamp
+        var md = config.minDate;
+        if (md && year < md.getYear()) year = md.getYear();
+        md = config.maxDate;
+        if (md && endYear > md.getYear()) endYear = md.getYear();
 
         for (; year <= endYear; year++) {
             html += '<option value="' + year + '"';
@@ -164,72 +154,60 @@ datepickr.init = function(element, instanceConfig) {
         return html;
     }
 
-    function updateNavCurrentDate() {
-        navCurrentMonth.innerHTML = config.changeMonth ?
-            updateMonthMenu() : config.monthNames[showingDate.getMonth()];
-
-        navCurrentYear.innerHTML = config.changeYear ?
-            updateYearMenu() : showingDate.getYear();
-
-        // XXX disable next/prev month buttons if outside min/max
-    }
-
     // clamp showingDate to min/max then fix nav & days
-    function rebuildCalendar() {
+    function rebuild() {
         if (showingDate.compare(config.minDate) < 0) {
             showingDate = config.minDate.clone();
         } else if (0 < showingDate.compare(config.maxDate)) {
             showingDate = config.maxDate.clone();
         }
 
-        updateNavCurrentDate();
-        buildDaysInMonth(); // XXX only called here
+        navMonth.innerHTML = config.changeMonth ?
+            updateMonthMenu() : config.monthNames[showingDate.getMonth()];
+
+        navYear.innerHTML = config.changeYear ?
+            updateYearMenu() : showingDate.getYear();
+
+        // XXX disable next/prev month buttons if outside min/max
+
+        buildDaysInMonth();
     }
 
     function buildUISkel() {
-        function newElem(tagName, cls) {
+        function newElem(tagName, parent, cls) {
             var e = document.createElement(tagName);
+            parent.appendChild(e);
             if (cls) e.className = 'datepickr' + cls;
             return e;
         }
 
-        container = newElem('div', '-calendar');
+        container = newElem('div', element.parentNode, '-calendar');
 
         // current date display/navigation
-        var dates = newElem('div', '-dates');
+        var dates = newElem('div', container, '-dates');
         dates.innerHTML = '<span class="datepickr-prev-month">&lt;</span>' +
             '<span class="datepickr-next-month">&gt;</span>';
 
         var tagName = config.changeMonth ? 'select' : 'span';
-        navCurrentMonth = newElem(tagName, '-current-month');
+        navMonth = newElem(tagName, dates, '-current-month');
 
         tagName = config.changeYear ? 'select' : 'span';
-        navCurrentYear = newElem(tagName, '-current-year');
+        navYear = newElem(tagName, dates, '-current-year');
 
-        dates.appendChild(navCurrentMonth);
-        dates.appendChild(navCurrentYear);
-        container.appendChild(dates);
-
-        var table = newElem('table');
+        var table = newElem('table', container);
         table.innerHTML = '<thead><tr><th>' + DPDate.weekdaysInCalendarOrder().join('</th><th>') + '</th></tr></thead>';
 
-        // XXX needed as var to set innerHTML
-        calendarBody = newElem('tbody');
-        table.appendChild(calendarBody);
-
-        container.appendChild(table);
-
-        element.parentNode.appendChild(container);
+        calendarBody = newElem('tbody', table);
     }
 
     function monthChanged() {
-        showingDate.setMonth(parseInt(navCurrentMonth.value));
-        rebuildCalendar();
+        showingDate.setMonth(parseInt(navMonth.value));
+        rebuild();
     }
 
     function yearChanged() {
-        showingDate.setYear(parseInt(navCurrentYear.value));
-        rebuildCalendar();
+        showingDate.setYear(parseInt(navYear.value));
+        rebuild();
     }
 
     function anyClick(event) {
@@ -241,10 +219,10 @@ datepickr.init = function(element, instanceConfig) {
 
         if (targetClass === 'datepickr-prev-month') {
             showingDate.prevMonth();
-            rebuildCalendar();
+            rebuild();
         } else if (targetClass === 'datepickr-next-month') {
             showingDate.nextMonth();
-            rebuildCalendar();
+            rebuild();
         } else if (targetClass === 'datepickr-day' &&
                    !target.parentNode.classList.contains('disabled')) {
             selectedDate = showingDate.clone().setDay(
@@ -277,7 +255,7 @@ datepickr.init = function(element, instanceConfig) {
         container.style.left = (br.left - off) + "px";
         container.style.top = (br.bottom + off) + "px";
 
-        rebuildCalendar();
+        rebuild();
 
         document.addEventListener('click', anyClick);
         container.classList.add('open');
@@ -292,8 +270,8 @@ datepickr.init = function(element, instanceConfig) {
         what += 'EventListener';
         function caller(elem, name, cb) { elem[what].call(elem, name, cb) }
 
-        if (config.changeMonth) caller(navCurrentMonth, 'change', monthChanged);
-        if (config.changeYear) caller(navCurrentYear, 'change', yearChanged);
+        if (config.changeMonth) caller(navMonth, 'change', monthChanged);
+        if (config.changeYear) caller(navYear, 'change', yearChanged);
 
         caller(element, 'click', open);
         if (element.nodeName === 'INPUT') {
@@ -321,17 +299,16 @@ datepickr.init = function(element, instanceConfig) {
         }
         element._datepickr = self;
 
-        if (instanceConfig) {
+        // set up our config
+        if (userConfig) {
             config = {};
             for (var key in defaultConfig) {
-                config[key] = instanceConfig[key] || defaultConfig[key];
+                config[key] = userConfig[key] || defaultConfig[key];
             }
         }
-
         if (config.altInput && !config.altFormat) {
             config.altFormat = config.dateFormat;
         }
-
         config.monthNames = config.abbreviateMonth ?
             DPDate.monthAbbrevs : DPDate.months;
 
