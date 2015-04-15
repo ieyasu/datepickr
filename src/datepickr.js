@@ -253,7 +253,9 @@ datepickr.init = function(element, instanceConfig) {
             if (config.altInput) {
                 config.altInput.value = selectedDate.strftime(config.altFormat);
             }
-            element.value = selectedDate.strftime(config.dateFormat);
+            if (element.value) {
+                element.value = selectedDate.strftime(config.dateFormat);
+            }
 
             close();
         } else { // see if user clicked outside calendar
