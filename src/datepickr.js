@@ -10,9 +10,9 @@
     To Public License, Version 2, as published by Sam Hocevar. See
     http://www.wtfpl.net/ for more details.
 */
+'use strict';
 
 function datepickr(selector, config) {
-    'use strict';
     function mkPickr(element) {
         return new datepickr.init(element, config);
     }
@@ -31,7 +31,6 @@ function datepickr(selector, config) {
 };
 
 datepickr.init = function(element, userConfig) {
-    'use strict';
     var self = this,
         defaultConfig = {
             dateFormat: '%B %e, %Y',
