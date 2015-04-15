@@ -65,9 +65,9 @@ datepickr.init = function(element, userConfig) {
                 mLast : config.maxDate;
 
         function tdClasses() {
-            var classes = '';
+            var classes = 'datepickr-day';
             if (calDay.isSameDay(today)) {
-                classes += 'today';
+                classes += ' today';
             }
             if (calDay.isSameDay(selectedDate)) {
                 classes += ' selected';
@@ -84,8 +84,8 @@ datepickr.init = function(element, userConfig) {
         }
 
         for (var html = '<tr>'; ; calDay.nextDay()) {
-            html += '<td' + tdClasses() + '><span class="datepickr-day">';
-            html += calDay.getDay() + '</span></td>';
+            html += '<td' + tdClasses() + '>';
+            html += calDay.getDay() + '</td>';
 
             if (calDay.isSameDay(calLast)) break;
 
@@ -194,7 +194,8 @@ datepickr.init = function(element, userConfig) {
         tagName = config.changeYear ? 'select' : 'span';
         navYear = newElem(tagName, dates, '-current-year');
 
-        var table = newElem('table', container);
+        var wrap = newElem('div', container, '-wrap')
+        var table = newElem('table', wrap);
         table.innerHTML = '<thead><tr><th>' + DPDate.weekdaysInCalendarOrder().join('</th><th>') + '</th></tr></thead>';
 
         calendarBody = newElem('tbody', table);
@@ -224,7 +225,7 @@ datepickr.init = function(element, userConfig) {
             showingDate.nextMonth();
             rebuild();
         } else if (targetClass === 'datepickr-day' &&
-                   !target.parentNode.classList.contains('disabled')) {
+                   !target.classList.contains('disabled')) {
             selectedDate = showingDate.clone().setDay(
                 parseInt(target.innerHTML, 10));
 
@@ -250,7 +251,7 @@ datepickr.init = function(element, userConfig) {
     function open() {
         // position calendar relative to element (with focus outline)
         // XXX would be nice if we didn't have to assume outline size
-        var off = (element.nodeName === 'INPUT') ? 3 : 0;
+        var off = (element.nodeName === 'INPUT') ? 2 : 0;
         var br = element.getBoundingClientRect();
         container.style.left = (br.left - off) + "px";
         container.style.top = (br.bottom + off) + "px";
