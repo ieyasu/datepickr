@@ -212,27 +212,31 @@ datepickr.init = function(element, userConfig) {
     }
 
     function anyClick(event) {
-        var target = event.target, targetClass = target.className;
+        var target = event.target;
+
+        function targetHasClass(cls) {
+            return target.classList.contains(cls);
+        }
 
         // prevents a snarl of events propagating to the input element, notably
         // when clicking on date navigation or after the calendar is closed
         event.preventDefault();
 
-        if (targetClass === 'datepickr-prev-month') {
+        if (targetHasClass('datepickr-prev-month')) {
             showingDate.prevMonth();
             rebuild();
-        } else if (targetClass === 'datepickr-next-month') {
+        } else if (targetHasClass('datepickr-next-month')) {
             showingDate.nextMonth();
             rebuild();
-        } else if (targetClass === 'datepickr-day' &&
-                   !target.classList.contains('disabled')) {
+        } else if (targetHasClass('datepickr-day') &&
+                   !targetHasClass('disabled')) {
             selectedDate = showingDate.clone().setDay(
                 parseInt(target.innerHTML, 10));
 
             if (config.altInput) {
                 config.altInput.value = selectedDate.strftime(config.altFormat);
             }
-            if (element.value) {
+            if (element.value !== undefined) {
                 element.value = selectedDate.strftime(config.dateFormat);
             }
 
