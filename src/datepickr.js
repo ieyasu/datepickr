@@ -52,42 +52,13 @@ datepickr.init = function(element, instanceConfig) {
             yearRange: "c-10:c+10",
             abbreviateMonth: false
         },
-        config,
+        config = defaultConfig,
         container,
         calendarBody,
         navCurrentMonth,
         navCurrentYear,
         showingDate,
-        selectedDate;
-
-    if (element._datepickr) { // destroy old calendar if exists
-        element._datepickr.destroy();
-    }
-    element._datepickr = this;
-
-    if (instanceConfig) {
-        config = {};
-        for (var key in defaultConfig) {
-            config[key] = instanceConfig[key] || defaultConfig[key];
-        }
-    } else {
-        config = defaultConfig;
-    }
-
-    // convert from Date to DPDate
-    if (config.minDate && config.minDate.getTime) {
-        config.minDate = new DPDate(config.minDate.getTime());
-    }
-    if (config.maxDate && config.maxDate.getTime) {
-        config.maxDate = new DPDate(config.maxDate.getTime());
-    }
-
-    if (config.altInput && !config.altFormat) {
-        config.altFormat = config.dateFormat;
-    }
-
-    config.monthNames = config.abbreviateMonth ?
-        DPDate.monthAbbrevs : DPDate.months;
+        selectedDate = null;
 
     // each day in the month, and overlap
     function buildDaysInMonth() {
@@ -359,26 +330,49 @@ datepickr.init = function(element, instanceConfig) {
         events('remove');
         container.parentNode.removeChild(container);
         // XXX may need to null out some vars for GC
-    }
+    }.bind(self);
 
-    function init() {
-        var parsedDate;
+    (function() {
+        if (element._datepickr) { // destroy old calendar if exists
+            element._datepickr.destroy();
+        }
+        element._datepickr = self;
 
-        if (element.value) {
-            parsedDate = Date.parse(element.value);
+        if (instanceConfig) {
+            config = {};
+            for (var key in defaultConfig) {
+                config[key] = instanceConfig[key] || defaultConfig[key];
+            }
         }
 
+        // convert from Date to DPDate
+        if (config.minDate && config.minDate.getTime) {
+            config.minDate = new DPDate(config.minDate.getTime());
+        }
+        if (config.maxDate && config.maxDate.getTime) {
+            config.maxDate = new DPDate(config.maxDate.getTime());
+        }
+
+        if (config.altInput && !config.altFormat) {
+            config.altFormat = config.dateFormat;
+        }
+
+        config.monthNames = config.abbreviateMonth ?
+            DPDate.monthAbbrevs : DPDate.months;
+
+        // initialize selected and showing dates
+        if (element.value) {
+            var parsedDate = Date.parse(element.value);
+        }
         if (parsedDate && !isNaN(parsedDate)) {
             selectedDate = showingDate = new DPDate(parsedDate);
         } else {
-            selectedDate = null;
             showingDate = new DPDate();
         }
 
         buildUISkel();
         events('add');
-    }
-    init();
+    })();
 
     return self;
 };
