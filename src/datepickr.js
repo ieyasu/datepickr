@@ -248,6 +248,13 @@ datepickr.init = function(element, userConfig) {
         }
     }
 
+    function closeOnEsc(event) {
+        // MDN says the below are deprecated in favor of .key, but the latter
+        // isn't implemented in enough browsers as of April 2015
+        var code = event.keyCode || event.which;
+        if (code === 27) close();
+    }
+
     function open() {
         // position calendar relative to element (with focus outline)
         // XXX would be nice if we didn't have to assume outline size
@@ -277,8 +284,7 @@ datepickr.init = function(element, userConfig) {
         caller(element, 'click', open);
         if (element.nodeName === 'INPUT') {
             caller(element, 'focus', open);
-
-            // Esc button -> close dialog
+            caller(element, 'keypress', closeOnEsc);
 
             // element#blur->close causes tons of trouble
             // if we want to close calendar after focusing another element,
