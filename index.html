@@ -56,11 +56,12 @@
             datepickr('.datepickr', { dateFormat: 'd-m-Y'});
 
             // Min and max date
+            var now = new Date().getTime();
             datepickr('#minAndMax', {
                 // few days ago
-                minDate: new Date().getTime() - 2.592e8,
+                minDate: new DPDate(now - 2.592e8),
                 // few days from now
-                maxDate: new Date().getTime() + 2.592e8
+                maxDate: new Date().getTime(now + 2.592e8)
             });
 
             // datepickr on an icon, using altInput to store the value

@@ -87,8 +87,8 @@ You can also customize each datepickr instance by passing in some extra config o
 | dateFormat | string | '%B %e, %Y' | How the date will be displayed in the input box.  The format is given below. |
 | altInput | node | null | A reference to another input element. This can be useful if you want to show the user a readable date, but return something totally different to the server. |
 | altFormat | string | null | Same as dateFormat, but for the altInput field |
-| minDate | (DP)Date | null | The earliest date that a user can start picking from, as a JavaScript Date or our DPDate. |
-| maxDate | (DP)Date | null | The latest date that a user can pick from, as a JavaScript Date object or our DPDate. |
+| minDate | DPDate | null | The earliest date that a user can start picking from, as a DPDate. |
+| maxDate | DPDate | null | The latest date that a user can pick from, as a DPDate. |
 | changeMonth | boolean | false | If true, the month displayed in the titlebar becomes a dropdown menu that lets the user jump to an arbitrary month of the current year. |
 | changeYear | boolean | false | Like changeMonth, but displays some number of years to jump to.  The range of years is controlled by yearRange. |
 | yearRange | string | 'c-10:c+10' | The range of years displayed in the year dropdown menu. More below. |

@@ -345,14 +345,6 @@ datepickr.init = function(element, instanceConfig) {
             }
         }
 
-        // convert from Date to DPDate
-        if (config.minDate && config.minDate.getTime) {
-            config.minDate = new DPDate(config.minDate.getTime());
-        }
-        if (config.maxDate && config.maxDate.getTime) {
-            config.maxDate = new DPDate(config.maxDate.getTime());
-        }
-
         if (config.altInput && !config.altFormat) {
             config.altFormat = config.dateFormat;
         }
