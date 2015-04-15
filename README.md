@@ -10,6 +10,7 @@ Major changes:
 - Lifted date calculations into DPDate class, with units tests for same
 - Date formatting is now strftime()-compatible instead of PHP-like
 - Removed browser compatibility shims
+- Pressing the Escape key closes the calendar
 
 
 ### Quick Start
