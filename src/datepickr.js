@@ -232,11 +232,16 @@ datepickr.init = function(element, userConfig) {
             selectedDate = showingDate.clone().setDay(
                 parseInt(target.innerHTML, 10));
 
+            function changeValue(elem, fmt) {
+                elem.value = selectedDate.strftime(fmt);
+                let ev = new Event('change', {target: elem});
+                elem.dispatchEvent(ev);
+            }
             if (config.altInput) {
-                config.altInput.value = selectedDate.strftime(config.altFormat);
+                changeValue(config.altInput, config.altFormat);
             }
             if (element.value !== undefined) {
-                element.value = selectedDate.strftime(config.dateFormat);
+                changeValue(element, config.dateFormat);
             }
 
             close();
