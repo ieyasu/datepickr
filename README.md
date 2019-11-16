@@ -53,7 +53,7 @@ Only recent browsers are supported.
 You can localize Datepickr by changing properties of the DPDate class.
 
 | DPDate Property | Description | Default |
-| --------------- |------------ | ------------- | ------------- |
+| --------------- |------------ | ------------- |
 | weekdays        | Full weekday names | ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] |
 | weekdayAbbrevs  | Abbreviated weekday names | ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] |
 | months          | Full month names | ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] |
