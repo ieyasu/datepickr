@@ -211,6 +211,12 @@ datepickr.init = function(element, userConfig) {
     }
 
     function anyClick(event) {
+        function changeValue(elem, fmt) {
+            elem.value = selectedDate.strftime(fmt);
+            var ev = new Event('change', {target: elem});
+            elem.dispatchEvent(ev);
+        }
+
         var target = event.target;
 
         function targetHasClass(cls) {
@@ -232,11 +238,6 @@ datepickr.init = function(element, userConfig) {
             selectedDate = showingDate.clone().setDay(
                 parseInt(target.innerHTML, 10));
 
-            function changeValue(elem, fmt) {
-                elem.value = selectedDate.strftime(fmt);
-                let ev = new Event('change', {target: elem});
-                elem.dispatchEvent(ev);
-            }
             if (config.altInput) {
                 changeValue(config.altInput, config.altFormat);
             }
